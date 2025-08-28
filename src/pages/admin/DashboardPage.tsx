@@ -41,7 +41,16 @@ const DashboardPage: React.FC = () => {
   const [jobLogo, setJobLogo] = useState<File | null>(null);
   const [awardForm, setAwardForm] = useState({ title: '', description: '', issuedBy: '', date: '', category: 'other', isFeatured: false });
   const [awardImage, setAwardImage] = useState<File | null>(null);
+  // Brands form (Accreditations & Partners)
+  const [brandForm, setBrandForm] = useState({ title: '', type: 'accreditation', text: '', link: '', order: 1, isActive: true });
+  const [brandImage, setBrandImage] = useState<File | null>(null);
   const [creating, setCreating] = useState(false);
+  // Champions form
+  const [championForm, setChampionForm] = useState({ name: '', company: '', beforeRole: '', afterRole: '', testimonial: '', rating: 5, isFeatured: true, order: 1 });
+  const [championImage, setChampionImage] = useState<File | null>(null);
+  // Mentors form
+  const [mentorForm, setMentorForm] = useState({ name: '', title: '', company: '', bio: '', linkedin: '', isFeatured: true, order: 1, active: true });
+  const [mentorImage, setMentorImage] = useState<File | null>(null);
   const [resumeModalOpen, setResumeModalOpen] = useState(false);
   const [selectedResume, setSelectedResume] = useState<any | null>(null);
   const [resumeLoading, setResumeLoading] = useState(false);
@@ -119,6 +128,18 @@ const DashboardPage: React.FC = () => {
             response = await adminService.getAwards(1, 50);
             dataKey = 'awards';
             break;
+          case 'brands':
+            response = await adminService.getBrands(1, 50);
+            dataKey = 'brands';
+            break;
+          case 'champions':
+            response = await adminService.getChampions(1, 50);
+            dataKey = 'champions';
+            break;
+          case 'mentors':
+            response = await adminService.getMentors(1, 50);
+            dataKey = 'mentors';
+            break;
           case 'articles':
             response = await adminService.getArticles(1, 50);
             dataKey = 'articles';
@@ -173,6 +194,9 @@ const DashboardPage: React.FC = () => {
         job: adminService.deleteJob,
         course: adminService.deleteCourse,
         award: adminService.deleteAward,
+        brand: adminService.deleteBrand,
+        champion: adminService.deleteChampion,
+        mentor: adminService.deleteMentor,
         article: adminService.deleteArticle,
         review: adminService.deleteReview,
         query: adminService.deleteQuery,
@@ -252,6 +276,9 @@ const DashboardPage: React.FC = () => {
       jobs: ['Title', 'Company', 'Location', 'Type'],
       courses: ['Title', 'Price', 'Duration', 'Level', 'Page Link'],
       awards: ['Title', 'Issued By', 'Date', 'Category', 'Featured'],
+      brands: ['Title', 'Type', 'Text', 'Link', 'Order', 'Active'],
+      champions: ['Name', 'Company', 'Before', 'After', 'Rating', 'Featured', 'Order'],
+      mentors: ['Name', 'Title', 'Company', 'Featured', 'Order', 'Active'],
       articles: ['Title', 'Summary', 'Tags'],
       reviews: ['User', 'Course', 'Rating', 'Comment'],
       queries: ['Name', 'Email', 'Subject', 'Date'],
@@ -282,7 +309,7 @@ const DashboardPage: React.FC = () => {
           <td>{item.price}</td>
           <td>{item.duration}</td>
           <td>{item.level}</td>
-          <td>
+            <td>
             {item.pageLink ? (
               <a
                 href={item.pageLink}
@@ -305,6 +332,37 @@ const DashboardPage: React.FC = () => {
           <td>{formatDate(item.date)}</td>
           <td>{item.category}</td>
           <td>{item.isFeatured ? 'Yes' : 'No'}</td>
+        </>
+      ),
+      brands: (item) => (
+        <>
+          <td>{item.title}</td>
+          <td>{item.type}</td>
+          <td className="max-w-xs truncate" title={item.text}>{item.text || '-'}</td>
+          <td>{item.link ? <a href={item.link} target="_blank" rel="noreferrer" className="text-blue-600 underline">Open</a> : '-'}</td>
+          <td>{item.order ?? '-'}</td>
+          <td>{item.isActive ? 'Yes' : 'No'}</td>
+        </>
+      ),
+      champions: (item) => (
+        <>
+          <td>{item.name}</td>
+          <td>{item.company}</td>
+          <td>{item.beforeRole}</td>
+          <td>{item.afterRole}</td>
+          <td>{item.rating ?? 5}</td>
+          <td>{item.isFeatured ? 'Yes' : 'No'}</td>
+          <td>{item.order ?? '-'}</td>
+        </>
+      ),
+      mentors: (item) => (
+        <>
+          <td>{item.name}</td>
+          <td>{item.title}</td>
+          <td>{item.company || '-'}</td>
+          <td>{item.isFeatured ? 'Yes' : 'No'}</td>
+          <td>{item.order ?? '-'}</td>
+          <td>{item.active ? 'Yes' : 'No'}</td>
         </>
       ),
       articles: (item) => (
@@ -447,6 +505,134 @@ const DashboardPage: React.FC = () => {
             <div className="flex justify-end md:col-span-6"><button type="submit" disabled={creating} className={`inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-white ${creating ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}>{creating ? 'Creating…' : 'Add Award'}</button></div>
           </form>
         )}
+        {section === 'brands' && (
+          <form
+            className="grid grid-cols-1 md:grid-cols-6 gap-3"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!brandForm.title) return alert('Title is required');
+              if (!brandImage) return alert('Brand image is required');
+              try {
+                setCreating(true);
+                const fd = new FormData();
+                fd.append('title', brandForm.title);
+                fd.append('type', brandForm.type);
+                if (brandForm.text) fd.append('text', brandForm.text);
+                if (brandForm.link) fd.append('link', brandForm.link);
+                fd.append('order', String(brandForm.order || 1));
+                fd.append('isActive', String(Boolean(brandForm.isActive)));
+                fd.append('image', brandImage);
+                await adminService.createBrand(fd);
+                setBrandForm({ title: '', type: 'accreditation', text: '', link: '', order: 1, isActive: true });
+                setBrandImage(null);
+                const response = await adminService.getBrands(1, 50);
+                setData(response.brands || []);
+              } catch (err: any) {
+                alert(err?.response?.data?.message || 'Failed to create brand');
+              } finally {
+                setCreating(false);
+              }
+            }}
+          >
+            <input className="border rounded px-3 py-2 text-sm" placeholder="Title" value={brandForm.title} onChange={(e) => setBrandForm((s) => ({ ...s, title: e.target.value }))} />
+            <select className="border rounded px-3 py-2 text-sm" value={brandForm.type} onChange={(e) => setBrandForm((s) => ({ ...s, type: e.target.value }))}>
+              <option value="accreditation">accreditation</option>
+              <option value="partner">partner</option>
+            </select>
+            <input className="border rounded px-3 py-2 text-sm" placeholder="Link (optional)" value={brandForm.link} onChange={(e) => setBrandForm((s) => ({ ...s, link: e.target.value }))} />
+            <input className="border rounded px-3 py-2 text-sm" type="number" placeholder="Order" value={brandForm.order} onChange={(e) => setBrandForm((s) => ({ ...s, order: Number(e.target.value) }))} />
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={brandForm.isActive} onChange={(e) => setBrandForm((s) => ({ ...s, isActive: e.target.checked }))} /> Active</label>
+            <input type="file" accept="image/*" className="border rounded px-3 py-2 text-sm" onChange={(e) => setBrandImage(e.target.files?.[0] || null)} />
+            <textarea className="border rounded px-3 py-2 text-sm md:col-span-6" placeholder="Text (optional)" value={brandForm.text} onChange={(e) => setBrandForm((s) => ({ ...s, text: e.target.value }))} />
+            <div className="flex justify-end md:col-span-6"><button type="submit" disabled={creating} className={`inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-white ${creating ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}>{creating ? 'Creating…' : 'Add Brand'}</button></div>
+          </form>
+        )}
+        {section === 'champions' && (
+          <form
+            className="grid grid-cols-1 md:grid-cols-6 gap-3"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!championForm.name || !championForm.company || !championForm.beforeRole || !championForm.afterRole || !championForm.testimonial) return alert('Fill all required fields');
+              if (!championImage) return alert('Champion image is required');
+              try {
+                setCreating(true);
+                const fd = new FormData();
+                fd.append('name', championForm.name);
+                fd.append('company', championForm.company);
+                fd.append('beforeRole', championForm.beforeRole);
+                fd.append('afterRole', championForm.afterRole);
+                fd.append('testimonial', championForm.testimonial);
+                fd.append('rating', String(championForm.rating || 5));
+                fd.append('isFeatured', String(Boolean(championForm.isFeatured)));
+                fd.append('order', String(championForm.order || 1));
+                fd.append('image', championImage);
+                await adminService.createChampion(fd);
+                setChampionForm({ name: '', company: '', beforeRole: '', afterRole: '', testimonial: '', rating: 5, isFeatured: true, order: 1 });
+                setChampionImage(null);
+                const response = await adminService.getChampions(1, 50);
+                setData(response.champions || []);
+              } catch (err: any) {
+                alert(err?.response?.data?.message || 'Failed to create champion');
+              } finally {
+                setCreating(false);
+              }
+            }}
+          >
+            <input className="border rounded px-3 py-2 text-sm" placeholder="Name" value={championForm.name} onChange={(e) => setChampionForm((s) => ({ ...s, name: e.target.value }))} />
+            <input className="border rounded px-3 py-2 text-sm" placeholder="Company" value={championForm.company} onChange={(e) => setChampionForm((s) => ({ ...s, company: e.target.value }))} />
+            <input className="border rounded px-3 py-2 text-sm" placeholder="Before Role" value={championForm.beforeRole} onChange={(e) => setChampionForm((s) => ({ ...s, beforeRole: e.target.value }))} />
+            <input className="border rounded px-3 py-2 text-sm" placeholder="After Role" value={championForm.afterRole} onChange={(e) => setChampionForm((s) => ({ ...s, afterRole: e.target.value }))} />
+            <input className="border rounded px-3 py-2 text-sm" type="number" min={1} max={5} placeholder="Rating (1-5)" value={championForm.rating} onChange={(e) => setChampionForm((s) => ({ ...s, rating: Number(e.target.value) }))} />
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={championForm.isFeatured} onChange={(e) => setChampionForm((s) => ({ ...s, isFeatured: e.target.checked }))} /> Featured</label>
+            <textarea className="border rounded px-3 py-2 text-sm md:col-span-3" placeholder="Testimonial" value={championForm.testimonial} onChange={(e) => setChampionForm((s) => ({ ...s, testimonial: e.target.value }))} />
+            <input className="border rounded px-3 py-2 text-sm" type="number" placeholder="Order" value={championForm.order} onChange={(e) => setChampionForm((s) => ({ ...s, order: Number(e.target.value) }))} />
+            <input type="file" accept="image/*" className="border rounded px-3 py-2 text-sm md:col-span-2" onChange={(e) => setChampionImage(e.target.files?.[0] || null)} />
+            <div className="flex justify-end md:col-span-6"><button type="submit" disabled={creating} className={`inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-white ${creating ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}>{creating ? 'Creating…' : 'Add Champion'}</button></div>
+          </form>
+        )}
+        {section === 'mentors' && (
+          <form
+            className="grid grid-cols-1 md:grid-cols-6 gap-3"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!mentorForm.name || !mentorForm.title) return alert('Name and Title are required');
+              if (!mentorImage) return alert('Mentor image is required');
+              try {
+                setCreating(true);
+                const fd = new FormData();
+                fd.append('name', mentorForm.name);
+                fd.append('title', mentorForm.title);
+                if (mentorForm.company) fd.append('company', mentorForm.company);
+                if (mentorForm.bio) fd.append('bio', mentorForm.bio);
+                if (mentorForm.linkedin) fd.append('linkedin', mentorForm.linkedin);
+                fd.append('isFeatured', String(Boolean(mentorForm.isFeatured)));
+                fd.append('order', String(mentorForm.order || 1));
+                fd.append('active', String(Boolean(mentorForm.active)));
+                fd.append('image', mentorImage);
+                await adminService.createMentor(fd);
+                setMentorForm({ name: '', title: '', company: '', bio: '', linkedin: '', isFeatured: true, order: 1, active: true });
+                setMentorImage(null);
+                const response = await adminService.getMentors(1, 50);
+                setData(response.mentors || []);
+              } catch (err: any) {
+                alert(err?.response?.data?.message || 'Failed to create mentor');
+              } finally {
+                setCreating(false);
+              }
+            }}
+          >
+            <input className="border rounded px-3 py-2 text-sm" placeholder="Name" value={mentorForm.name} onChange={(e) => setMentorForm((s) => ({ ...s, name: e.target.value }))} />
+            <input className="border rounded px-3 py-2 text-sm" placeholder="Title" value={mentorForm.title} onChange={(e) => setMentorForm((s) => ({ ...s, title: e.target.value }))} />
+            <input className="border rounded px-3 py-2 text-sm" placeholder="Company (optional)" value={mentorForm.company} onChange={(e) => setMentorForm((s) => ({ ...s, company: e.target.value }))} />
+            <input className="border rounded px-3 py-2 text-sm" placeholder="LinkedIn URL (optional)" value={mentorForm.linkedin} onChange={(e) => setMentorForm((s) => ({ ...s, linkedin: e.target.value }))} />
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={mentorForm.isFeatured} onChange={(e) => setMentorForm((s) => ({ ...s, isFeatured: e.target.checked }))} /> Featured</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={mentorForm.active} onChange={(e) => setMentorForm((s) => ({ ...s, active: e.target.checked }))} /> Active</label>
+            <textarea className="border rounded px-3 py-2 text-sm md:col-span-3" placeholder="Short Bio (optional)" value={mentorForm.bio} onChange={(e) => setMentorForm((s) => ({ ...s, bio: e.target.value }))} />
+            <input className="border rounded px-3 py-2 text-sm" type="number" placeholder="Order" value={mentorForm.order} onChange={(e) => setMentorForm((s) => ({ ...s, order: Number(e.target.value) }))} />
+            <input type="file" accept="image/*" className="border rounded px-3 py-2 text-sm md:col-span-2" onChange={(e) => setMentorImage(e.target.files?.[0] || null)} />
+            <div className="flex justify-end md:col-span-6"><button type="submit" disabled={creating} className={`inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-white ${creating ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}>{creating ? 'Creating…' : 'Add Mentor'}</button></div>
+          </form>
+        )}
         {section === 'articles' && (
           <form
             className="grid grid-cols-1 md:grid-cols-6 gap-3"
@@ -538,6 +724,8 @@ const DashboardPage: React.FC = () => {
       jobs: 'job',
       courses: 'course',
       awards: 'award',
+      champions: 'champion',
+      mentors: 'mentor',
       articles: 'article',
       reviews: 'review',
       queries: 'query',

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, Briefcase, Building, Globe, Search, Zap, Target } from 'lucide-react';
+import { MapPin, Briefcase, Building, Globe, Zap, Target } from 'lucide-react';
 import { jobService } from '../services/jobService';
 
 type BackendJob = {
@@ -54,29 +54,16 @@ const JobsSection: React.FC = () => {
   return (
     <div className="bg-gray-50 font-sans">
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-center py-20 md:py-32 px-4">
-        <div className="absolute inset-0 bg-black opacity-30"></div>
+      <div className="relative text-white text-center py-20 md:py-32 px-4 overflow-hidden">
+        {/* Background image */}
+        <img src="/jobs.jpg" alt="Jobs at Career Redefine" className="absolute inset-0 w-full h-full object-cover" />
+        {/* Subtle overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60"></div>
         <div className="relative z-10">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight animate-fadeInDown">Find Your Next Big Opportunity</h1>
           <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto animate-fadeInUp">
-            Your dream job is closer than you think. Search, apply, and get hired with our powerful tools.
+            Your dream job is closer than you think. Apply with confidence using our powerful tools.
           </p>
-          <div className="mt-8 max-w-2xl mx-auto">
-            <form className="flex flex-col sm:flex-row gap-4">
-              <input
-                type="text"
-                placeholder="Job title, keyword, or company"
-                className="w-full px-5 py-4 text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-              <button
-                type="submit"
-                className="bg-yellow-400 text-gray-900 font-bold py-4 px-8 rounded-lg hover:bg-yellow-500 transition-colors flex items-center justify-center"
-              >
-                <Search className="h-5 w-5 mr-2" />
-                Search Jobs
-              </button>
-            </form>
-          </div>
         </div>
       </div>
 

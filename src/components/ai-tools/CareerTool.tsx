@@ -158,7 +158,12 @@ Location: ${form.location || 'N/A'}
         {result && (
           <article className="prose max-w-none">
             {/* eslint-disable-next-line react/no-danger */}
-            <div dangerouslySetInnerHTML={{ __html: result.replace(/\n/g, '<br/>') }} />
+            {(() => {
+              const formatted = result
+                .replace(/^(\s*)([*-])\s+/gm, '$1• ')
+                .replace(/\n/g, '<br/>');
+              return <div dangerouslySetInnerHTML={{ __html: formatted }} />;
+            })()}
           </article>
         )}
       </div>

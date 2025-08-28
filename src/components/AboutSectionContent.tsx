@@ -1,12 +1,16 @@
 import React from 'react';
 import { Users, Rocket, Target, Heart } from 'lucide-react';
+import MentorsCarousel from './MentorsCarousel';
 
 const AboutSectionContent: React.FC = () => {
   return (
     <div className="bg-gray-50 font-sans">
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-gray-800 to-gray-900 text-white text-center py-20 md:py-32 px-4">
-        <div className="absolute inset-0 bg-black opacity-50"></div>
+      <div className="relative text-white text-center py-20 md:py-32 px-4 overflow-hidden">
+        {/* Background image */}
+        <img src="/about.jpg" alt="About Career Redefine" className="absolute inset-0 w-full h-full object-cover" />
+        {/* Soft overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60"></div>
         <div className="relative z-10">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight animate-fadeInDown">We're Redefining Careers, Together.</h1>
           <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto animate-fadeInUp">
@@ -32,10 +36,14 @@ const AboutSectionContent: React.FC = () => {
               <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" alt="Our team" className="absolute inset-0 w-full h-full object-cover rounded-xl shadow-lg" />
             </div>
           </div>
+          {/* Dynamic Mentors Slider */}
+          <div className="mt-14">
+            <MentorsCarousel featuredOnly />
+          </div>
         </div>
       </div>
 
-      {/* Mentor Section */}
+      {/* Mentor Section 
       <div className="relative py-16 sm:py-24 bg-gradient-to-b from-white to-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
@@ -56,7 +64,7 @@ const AboutSectionContent: React.FC = () => {
               <div className="relative group perspective-[1000px]">
                 <div className="relative p-2 rounded-2xl bg-gradient-to-br from-gray-100 to-white border border-gray-200 shadow-xl transform-gpu transition-transform duration-300 group-hover:rotate-x-1 group-hover:-rotate-y-1">
                   <img src="/mentor.png" alt="Mentor" className="w-full h-auto rounded-xl object-cover" />
-                  {/* subtle floating chips */}
+          
                   <div className="absolute -top-4 -right-4 bg-white/80 backdrop-blur px-3 py-1 rounded-full shadow text-xs text-gray-700 border border-gray-200">Mentor</div>
                   <div className="absolute -bottom-4 -left-4 bg-white/80 backdrop-blur px-3 py-1 rounded-full shadow text-xs text-gray-700 border border-gray-200">AI • Analytics • Product</div>
                 </div>
@@ -64,7 +72,7 @@ const AboutSectionContent: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div>*/}
 
       {/* Our Values Section */}
       <div className="py-16 sm:py-24 bg-gray-50">

@@ -6,12 +6,14 @@ interface ProtectedRouteProps {
   requiredRole?: string;
   redirectTo?: string;
   children?: React.ReactNode;
+  requiredPremium?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-  requiredRole = 'user',
+  requiredRole,
   redirectTo = '/login',
-  children
+  children,
+  requiredPremium
 }) => {
   const { user, isLoading } = useAuth();
 
@@ -24,6 +26,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!user || (requiredRole && user.role !== requiredRole)) {
+    return <Navigate to={redirectTo} replace />;
+  }
+
+  if (requiredPremium && !user.isPremium) {
     return <Navigate to={redirectTo} replace />;
   }
 

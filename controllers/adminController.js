@@ -226,3 +226,68 @@ export const bulkDeleteUsers = catchAsync(async (req, res, next) => {
     data: null
   });
 });
+
+// Premium Users: create premium user (admin only)
+export const createPremiumUser = catchAsync(async (req, res, next) => {
+  const { name, email, password } = req.body;
+
+  if (!email || !password) {
+    return next(new AppError('Email and password are required', 400));
+  }
+
+  const existing = await User.findOne({ email });
+  if (existing) {
+    return next(new AppError('A user with this email already exists', 400));
+  }
+
+  const user = await User.create({
+    name: name || email.split('@')[0],
+    email,
+    password,
+    isVerified: true,
+    isPremium: true
+  });
+
+  const safeUser = await User.findById(user._id).select('-password -otp -otpExpires -passwordResetToken -passwordResetExpires -activeSessions');
+
+  res.status(201).json({
+    status: 'success',
+    data: { user: safeUser }
+  });
+});
+
+// Premium Users: list premium users (admin only)
+export const listPremiumUsers = catchAsync(async (req, res, next) => {
+  const users = await User.find({ isPremium: true })
+    .select('-password -otp -otpExpires -passwordResetToken -passwordResetExpires -activeSessions')
+    .sort({ createdAt: -1 });
+
+  res.status(200).json({
+    status: 'success',
+    results: users.length,
+    data: { users }
+  });
+});
+
+// Premium Users: set premium status (grant or revoke)
+export const setPremiumStatus = catchAsync(async (req, res, next) => {
+  const { isPremium } = req.body;
+  if (typeof isPremium !== 'boolean') {
+    return next(new AppError('isPremium boolean is required', 400));
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { isPremium },
+    { new: true, runValidators: true }
+  ).select('-password -otp -otpExpires -passwordResetToken -passwordResetExpires -activeSessions');
+
+  if (!user) {
+    return next(new AppError('No user found with that ID', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: { user }
+  });
+});

@@ -29,6 +29,12 @@ const navigation = [
   { name: 'Reviews', href: '/admin#reviews', icon: StarIcon, current: false },
   { name: 'Resumes', href: '/admin#resumes', icon: DocumentTextIcon, current: false },
   { name: 'Awards', href: '/admin#awards', icon: TrophyIcon, current: false },
+  { name: 'Champions', href: '/admin#champions', icon: TrophyIcon, current: false },
+  { name: 'Mentors', href: '/admin#mentors', icon: TrophyIcon, current: false },
+  { name: 'Brands', href: '/admin#brands', icon: TrophyIcon, current: false },
+  { name: 'Materials', href: '/admin/materials', icon: DocumentTextIcon, current: false },
+  { name: 'Premium Users', href: '/admin/premium-users', icon: StarIcon, current: false },
+  { name: 'Groups', href: '/admin/groups', icon: UsersIcon, current: false },
 ];
 
 function classNames(...classes: string[]) {

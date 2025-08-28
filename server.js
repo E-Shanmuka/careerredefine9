@@ -1,6 +1,8 @@
-// Load environment variables from config.env
+// Load environment variables: prefer .env if present, otherwise config.env
 import dotenv from 'dotenv';
-dotenv.config({ path: './config.env' });
+import fs from 'fs';
+const envPath = fs.existsSync('./.env') ? './.env' : './config.env';
+dotenv.config({ path: envPath });
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
@@ -29,6 +31,14 @@ import * as bookingController from './controllers/bookingController.js';
 import * as authController from './controllers/authController.js';
 import * as aiController from './controllers/aiController.js';
 import * as questionController from './controllers/questionController.js';
+import * as championController from './controllers/championController.js';
+import * as mentorController from './controllers/mentorController.js';
+import * as brandController from './controllers/brandController.js';
+import * as materialController from './controllers/materialController.js';
+import * as groupController from './controllers/groupController.js';
+import * as groupMessageController from './controllers/groupMessageController.js';
+import * as premiumMeetingController from './controllers/premiumMeetingController.js';
+import { Server as SocketIOServer } from 'socket.io';
 import Article from './models/Article.js';
 import * as resumeController from './controllers/resumeController.js';
 import {
@@ -557,6 +567,61 @@ app.delete('/api/v1/admin/users/:id', protect, restrictTo('admin'), adminControl
 app.patch('/api/v1/admin/users/bulk-update', protect, restrictTo('admin'), adminController.bulkUpdateUsers);
 app.delete('/api/v1/admin/users/bulk-delete', protect, restrictTo('admin'), adminController.bulkDeleteUsers);
 
+// ----- Admin Premium Users -----
+app.get('/api/v1/admin/premium-users', protect, restrictTo('admin'), adminController.listPremiumUsers);
+app.post('/api/v1/admin/premium-users', protect, restrictTo('admin'), adminController.createPremiumUser);
+app.patch('/api/v1/admin/premium-users/:id', protect, restrictTo('admin'), adminController.setPremiumStatus);
+
+// ----- Materials -----
+// Premium-only access helper
+const requirePremium = (req, res, next) => {
+  try {
+    if (req.user?.role === 'admin') return next(); // admins allowed
+    if (!req.user?.isPremium) {
+      return res.status(403).json({ status: 'fail', message: 'Premium access required' });
+    }
+    return next();
+  } catch (e) {
+    return res.status(403).json({ status: 'fail', message: 'Premium access required' });
+  }
+};
+
+// List materials (premium users and admins)
+app.get('/api/v1/materials', protect, requirePremium, materialController.listMaterials);
+// Admin upload material (PDF)
+app.post(
+  '/api/v1/materials',
+  protect,
+  restrictTo('admin'),
+  materialController.uploadMaterial,
+  materialController.createMaterial
+);
+// Admin delete material
+app.delete('/api/v1/materials/:id', protect, restrictTo('admin'), materialController.deleteMaterial);
+
+// Material view/download proxies (premium/admin)
+app.get('/api/v1/materials/:id/view', protect, requirePremium, materialController.streamMaterialInline);
+app.get('/api/v1/materials/:id/download', protect, requirePremium, materialController.streamMaterialDownload);
+
+// ----- Groups (Premium-only for users, Admin can manage) -----
+// Groups
+app.post('/api/v1/groups', protect, restrictTo('admin'), groupController.createGroup);
+app.get('/api/v1/groups', protect, requirePremium, groupController.listGroups);
+app.patch('/api/v1/groups/:id/add-member', protect, restrictTo('admin'), groupController.addMemberByEmail);
+app.patch('/api/v1/groups/:id/remove-member', protect, restrictTo('admin'), groupController.removeMember);
+app.delete('/api/v1/groups/:id', protect, restrictTo('admin'), groupController.deleteGroup);
+
+// Group Messages
+app.get('/api/v1/groups/:id/messages', protect, requirePremium, groupMessageController.listMessages);
+app.post(
+  '/api/v1/groups/:id/messages',
+  protect,
+  requirePremium,
+  groupMessageController.uploadMessageMedia,
+  groupMessageController.sendMessage
+);
+app.delete('/api/v1/group-messages/:messageId', protect, requirePremium, groupMessageController.deleteMessage);
+
 // ----- Users (profile and admin) -----
 // All user routes require auth
 app.get('/api/v1/users/me', protect, authController.getMe, getUser);
@@ -601,6 +666,77 @@ app.patch(
 );
 app.delete('/api/v1/awards/:id', protect, restrictTo('admin'), awardController.deleteAward);
 
+// ----- Champions -----
+// Public
+app.get('/api/v1/champions', championController.getAllChampions);
+app.get('/api/v1/champions/featured', championController.getFeaturedChampions);
+app.get('/api/v1/champions/:id', championController.getChampion);
+// Admin
+app.post(
+  '/api/v1/champions',
+  protect,
+  restrictTo('admin'),
+  championController.uploadChampionImage,
+  championController.resizeChampionImage,
+  championController.createChampion
+);
+app.patch(
+  '/api/v1/champions/:id',
+  protect,
+  restrictTo('admin'),
+  championController.uploadChampionImage,
+  championController.resizeChampionImage,
+  championController.updateChampion
+);
+app.delete('/api/v1/champions/:id', protect, restrictTo('admin'), championController.deleteChampion);
+
+// ----- Mentors -----
+// Public
+app.get('/api/v1/mentors', mentorController.getAllMentors);
+app.get('/api/v1/mentors/featured', mentorController.getFeaturedMentors);
+app.get('/api/v1/mentors/:id', mentorController.getMentor);
+// Admin
+app.post(
+  '/api/v1/mentors',
+  protect,
+  restrictTo('admin'),
+  mentorController.uploadMentorImage,
+  mentorController.resizeMentorImage,
+  mentorController.createMentor
+);
+app.patch(
+  '/api/v1/mentors/:id',
+  protect,
+  restrictTo('admin'),
+  mentorController.uploadMentorImage,
+  mentorController.resizeMentorImage,
+  mentorController.updateMentor
+);
+app.delete('/api/v1/mentors/:id', protect, restrictTo('admin'), mentorController.deleteMentor);
+
+// ----- Brands (Accreditations & Partnerships) -----
+// Public
+app.get('/api/v1/brands', brandController.getAllBrands);
+app.get('/api/v1/brands/:id', brandController.getBrand);
+// Admin
+app.post(
+  '/api/v1/brands',
+  protect,
+  restrictTo('admin'),
+  brandController.uploadBrandImage,
+  brandController.resizeBrandImage,
+  brandController.createBrand
+);
+app.patch(
+  '/api/v1/brands/:id',
+  protect,
+  restrictTo('admin'),
+  brandController.uploadBrandImage,
+  brandController.resizeBrandImage,
+  brandController.updateBrand
+);
+app.delete('/api/v1/brands/:id', protect, restrictTo('admin'), brandController.deleteBrand);
+
 // ----- Bookings -----
 // Protected for all
 app.get('/api/v1/bookings/my-bookings', protect, bookingController.getMyBookings);
@@ -616,6 +752,15 @@ app.get('/api/v1/bookings/status/:status', protect, restrictTo('admin'), booking
 app.get('/api/v1/bookings/date-range', protect, restrictTo('admin'), bookingController.getAllBookings);
 // Admin: hard delete booking (keeps existing cancel, accept/reject & meeting link flows intact)
 app.delete('/api/v1/bookings/:id/hard-delete', protect, restrictTo('admin'), bookingController.deleteBooking);
+
+// ----- Premium Meetings -----
+// User (premium) create + list their meeting requests
+app.post('/api/v1/premium-meetings', protect, requirePremium, premiumMeetingController.createMeetingRequest);
+app.get('/api/v1/premium-meetings/mine', protect, requirePremium, premiumMeetingController.listMyMeetings);
+// Admin manage meetings
+app.get('/api/v1/admin/premium-meetings', protect, restrictTo('admin'), premiumMeetingController.listAllMeetings);
+app.patch('/api/v1/admin/premium-meetings/:id', protect, restrictTo('admin'), premiumMeetingController.updateMeetingStatus);
+app.delete('/api/v1/admin/premium-meetings/:id', protect, restrictTo('admin'), premiumMeetingController.deleteMeeting);
 
 // ----- AI -----
 app.get('/api/v1/ai/health', aiController.health);
@@ -756,6 +901,29 @@ const startServer = async () => {
       if (process.env.NODE_ENV !== 'production' && process.env.EMBED_VITE === 'true') {
         console.log(`🔧 Vite dev server running at http://localhost:5173`);
       }
+    });
+
+    // Initialize Socket.IO for realtime group chat
+    const io = new SocketIOServer(server, {
+      cors: {
+        origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+        credentials: true,
+      },
+    });
+    // Provide IO to message controller for broadcasting
+    if (groupMessageController?.setIO) groupMessageController.setIO(io);
+
+    io.on('connection', (socket) => {
+      // Client should emit { groupId } to join a group room
+      socket.on('group:join', ({ groupId }) => {
+        if (!groupId) return;
+        socket.join(`group:${groupId}`);
+      });
+      socket.on('group:leave', ({ groupId }) => {
+        if (!groupId) return;
+        socket.leave(`group:${groupId}`);
+      });
+      socket.on('disconnect', () => {});
     });
 
     // Handle unhandled promise rejections

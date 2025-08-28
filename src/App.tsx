@@ -15,11 +15,20 @@ import AboutPage from './AboutPage';
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
 import ProfilePage from './pages/ProfilePage';
+import ChangePasswordPage from './pages/ChangePasswordPage';
 import QueriesPage from './pages/QueriesPage';
 import DashboardPage from './pages/admin/DashboardPage';
 import UsersPage from './pages/admin/UsersPage';
 import AdminJobsPage from './pages/admin/JobsPage';
+import PremiumUsersPage from './pages/admin/PremiumUsersPage';
+import MaterialsPage from './pages/admin/MaterialsPage';
+import AdminMeetingsPage from './pages/admin/MeetingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import PremiumPage from './pages/PremiumPage';
+import AdminGroupsPage from './pages/admin/GroupsPage';
+import GroupChatPage from './pages/GroupChatPage';
+import GroupsListPage from './pages/GroupsListPage';
+import PremiumToolsPage from './pages/PremiumToolsPage';
 
 // Admin Layout component
 const AdminLayout: React.FC = () => {
@@ -53,10 +62,34 @@ function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route
+                path="/premium"
+                element={
+                  <ProtectedRoute requiredPremium redirectTo="/login">
+                    <PremiumPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/premium-tools"
+                element={
+                  <ProtectedRoute requiredPremium redirectTo="/login">
+                    <PremiumToolsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/profile"
                 element={
                   <ProtectedRoute>
                     <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/change-password"
+                element={
+                  <ProtectedRoute>
+                    <ChangePasswordPage />
                   </ProtectedRoute>
                 }
               />
@@ -79,8 +112,30 @@ function App() {
                   <Route path="/admin" element={<DashboardPage />} />
                   <Route path="/admin/users" element={<UsersPage />} />
                   <Route path="/admin/jobs" element={<AdminJobsPage />} />
+                  <Route path="/admin/materials" element={<MaterialsPage />} />
+                  <Route path="/admin/groups" element={<AdminGroupsPage />} />
+                  <Route path="/admin/premium-users" element={<PremiumUsersPage />} />
+                  <Route path="/admin/meetings" element={<AdminMeetingsPage />} />
                 </Route>
               </Route>
+              {/* Groups List (Premium) */}
+              <Route
+                path="/groups"
+                element={
+                  <ProtectedRoute requiredPremium redirectTo="/login">
+                    <GroupsListPage />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Group Chat */}
+              <Route
+                path="/groups/:id"
+                element={
+                  <ProtectedRoute requiredPremium redirectTo="/login">
+                    <GroupChatPage />
+                  </ProtectedRoute>
+                }
+              />
               
               {/* Add more protected routes here */}
             </Routes>

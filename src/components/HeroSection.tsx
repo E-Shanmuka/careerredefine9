@@ -10,19 +10,19 @@ const HeroSection = () => {
       title: "Transform Your Career with",
       highlight: "AI-Powered Learning",
       description: "Join 5000+ professionals who've transformed their careers with our industry-relevant courses and personalized mentorship.",
-      image: "https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=1200"
+      image: "hero1.png"
     },
     {
       title: "Master the Future of",
       highlight: "Data Science & AI",
       description: "Learn from industry experts and work on real-world projects that prepare you for tomorrow's opportunities.",
-      image: "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1200"
+      image: "hero2.png"
     },
     {
       title: "Build Your Tech Career with",
       highlight: "Expert Mentorship",
       description: "Get personalized guidance from industry veterans and accelerate your journey to career success.",
-      image: "https://images.pexels.com/photos/3184298/pexels-photo-3184298.jpeg?auto=compress&cs=tinysrgb&w=1200"
+      image: "hero3.png"
     }
   ];
 

@@ -133,8 +133,11 @@ const SupportSection: React.FC = () => {
   return (
     <div className="bg-gray-50 font-sans">
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-gray-900 to-gray-800 text-white text-center py-20 md:py-32 px-4">
-        <div className="absolute inset-0 bg-black opacity-50"></div>
+      <div className="relative text-white text-center py-20 md:py-32 px-4 overflow-hidden">
+        {/* Background image */}
+        <img src="/support.jpg" alt="Support at Career Redefine" className="absolute inset-0 w-full h-full object-cover" />
+        {/* Subtle overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60"></div>
         <div className="relative z-10">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight animate-fadeInDown">World-Class Support, Always Here for You</h1>
           <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto animate-fadeInUp">

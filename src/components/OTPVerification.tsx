@@ -75,7 +75,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
   const handleVerify = async (otpValue?: string) => {
     let otpString = otpValue || otp.join('');
     
-    // Ensure we have exactly 6 digits
+    // Ensure we have exactly 6 digits (validation can be enforced server-side as well)
     // otpString = otpString.replace(/\D/g, ''); // Remove any non-digit characters
     // if (otpString.length !== 6) {
     //   setMessage({ text: 'Please enter a 6-digit OTP', isError: true });

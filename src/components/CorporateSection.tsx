@@ -8,8 +8,10 @@ import {
   ChevronRight 
 } from 'lucide-react';
 import styles from './CorporateSection.module.css';
+import { useNavigate } from 'react-router-dom';
 
 const CorporateSection = () => {
+  const navigate = useNavigate();
   const services = [
     {
       icon: GraduationCap,
@@ -128,16 +130,23 @@ const CorporateSection = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+              <button
+                onClick={() => navigate('/support#booking')}
+                className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              >
                 <span className="flex items-center space-x-2">
                   <span>Schedule Consultation</span>
                   <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </span>
               </button>
               
-              <button className="px-8 py-4 bg-white text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-300 border border-gray-200 hover:border-gray-300 shadow-md hover:shadow-lg">
+              <a
+                href="/brochure.pdf"
+                download
+                className="px-8 py-4 bg-white text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-300 border border-gray-200 hover:border-gray-300 shadow-md hover:shadow-lg text-center"
+              >
                 Download Brochure
-              </button>
+              </a>
             </div>
           </div>
         </div>

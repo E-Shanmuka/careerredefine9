@@ -42,7 +42,16 @@ Return: \n- Missing critical skills \n- Priority order \n- 8-week learning roadm
       <div className="mt-4 bg-gray-50 border rounded-lg p-4 min-h-[200px]">
         {error && <div className="text-red-600 mb-2">{error}</div>}
         {!error && !result && !loading && <p className="text-gray-500">Enter your details and click Analyze.</p>}
-        {result && <article className="prose max-w-none"><div dangerouslySetInnerHTML={{ __html: result.replace(/\n/g, '<br/>') }} /></article>}
+        {result && (
+          <article className="prose max-w-none">
+            {(() => {
+              const formatted = result
+                .replace(/^(\s*)([*-])\s+/gm, '$1• ')
+                .replace(/\n/g, '<br/>');
+              return <div dangerouslySetInnerHTML={{ __html: formatted }} />;
+            })()}
+          </article>
+        )}
       </div>
     </div>
   );

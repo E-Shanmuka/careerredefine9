@@ -68,7 +68,9 @@ const RegisterSection: React.FC = () => {
       };
       
       // Try to sign up the user
-      await axios.post(`${API_URL}/auth/signup`, userData);
+      console.log('[UI] Signup request →', { url: `${API_URL}/auth/signup`, payload: userData });
+      const resp = await axios.post(`${API_URL}/auth/signup`, userData);
+      console.log('[UI] Signup response ←', resp.status, resp.data);
       
       // If we get here, the user either:
       // 1. Is new and needs to verify their email (status 201)
@@ -77,6 +79,11 @@ const RegisterSection: React.FC = () => {
       setShowOTP(true);
       
     } catch (error: any) {
+      console.error('[UI] Signup error ×', {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error?.message,
+      });
       // Handle specific error for existing verified user
       if (error.response?.status === 400 && error.response?.data?.message?.includes('already exists')) {
         setError('An account with this email already exists. Please log in instead.');
@@ -92,18 +99,24 @@ const RegisterSection: React.FC = () => {
     if (!tempUserData) return false;
     
     try {
+      console.log('[UI] Verify OTP request →', { url: `${API_URL}/auth/verify-otp`, email: tempUserData.email, otp });
       const response = await axios.post(`${API_URL}/auth/verify-otp`, {
         email: tempUserData.email,
         otp
       });
+      console.log('[UI] Verify OTP response ←', response.status, response.data);
       
       if (response.data.success) {
         navigate('/login');
         return true;
       }
       return false;
-    } catch (error) {
-      console.error('OTP verification failed:', error);
+    } catch (error: any) {
+      console.error('[UI] Verify OTP error ×', {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error?.message,
+      });
       return false;
     }
   };
@@ -112,12 +125,18 @@ const RegisterSection: React.FC = () => {
     if (!tempUserData) return false;
     
     try {
-      await axios.post(`${API_URL}/auth/resend-otp`, {
+      console.log('[UI] Resend OTP request →', { url: `${API_URL}/auth/resend-otp`, email: tempUserData.email });
+      const resp = await axios.post(`${API_URL}/auth/resend-otp`, {
         email: tempUserData.email
       });
+      console.log('[UI] Resend OTP response ←', resp.status, resp.data);
       return true;
-    } catch (error) {
-      console.error('Failed to resend OTP:', error);
+    } catch (error: any) {
+      console.error('[UI] Resend OTP error ×', {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error?.message,
+      });
       return false;
     }
   };

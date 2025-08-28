@@ -28,6 +28,18 @@ export const adminService = {
     }
   },
 
+  // Brands (Accreditations & Partners)
+  getBrands: async (page = 1, limit = 50) => {
+    const response = await api.get(`/api/v1/brands?page=${page}&limit=${limit}`);
+    return response.data?.data; // { brands }
+  },
+
+  createBrand: async (payload: any) => {
+    const isForm = typeof FormData !== 'undefined' && payload instanceof FormData;
+    const response = await api.post('/api/v1/brands', payload, isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
+    return response.data?.data; // { brand }
+  },
+
   createReview: async (payload: { course: string; rating: number; comment?: string }) => {
     // Note: backend requires the user to be enrolled in the course
     const response = await api.post('/api/v1/reviews', payload);
@@ -156,6 +168,11 @@ export const adminService = {
     return response.data;
   },
 
+  deleteBrand: async (brandId: string) => {
+    const response = await api.delete(`/api/v1/brands/${brandId}`);
+    return response.data;
+  },
+
   deleteReview: async (reviewId: string) => {
     const response = await api.delete(`/api/v1/reviews/${reviewId}`);
     return response.data;
@@ -165,6 +182,22 @@ export const adminService = {
     // Use admin hard-delete endpoint to avoid interfering with existing workflows
     const response = await api.delete(`/api/v1/bookings/${bookingId}/hard-delete`);
     return response.data;
+  },
+
+  // Premium Users (admin)
+  listPremiumUsers: async () => {
+    const response = await api.get('/api/v1/admin/premium-users');
+    return response.data?.data; // { users }
+  },
+
+  createPremiumUser: async (payload: { name?: string; email: string; password: string; }) => {
+    const response = await api.post('/api/v1/admin/premium-users', payload);
+    return response.data?.data; // { user }
+  },
+
+  setPremiumStatus: async (id: string, isPremium: boolean) => {
+    const response = await api.patch(`/api/v1/admin/premium-users/${id}`, { isPremium });
+    return response.data?.data; // { user }
   },
 
   deleteResume: async (resumeId: string) => {
@@ -178,6 +211,27 @@ export const adminService = {
       meetingLink,
     });
     return response.data?.data; // { booking }
+  },
+
+  // Materials (admin)
+  listMaterials: async () => {
+    const response = await api.get('/api/v1/materials');
+    return response.data?.data; // { materials } (requires premium/admin; admin is allowed)
+  },
+
+  uploadMaterial: async (payload: { name?: string; file: File }) => {
+    const form = new FormData();
+    if (payload.name) form.append('name', payload.name);
+    form.append('file', payload.file);
+    const response = await api.post('/api/v1/materials', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data?.data; // { material }
+  },
+
+  deleteMaterial: async (id: string) => {
+    const response = await api.delete(`/api/v1/materials/${id}`);
+    return response.data;
   },
 
   // Creates (for inline forms)
@@ -215,5 +269,39 @@ export const adminService = {
     // Backend booking model: name, email, phone, date, timeSlot, type, message
     const response = await api.post('/api/v1/bookings', payload);
     return response.data?.data; // { booking }
+  },
+
+  // Champions
+  getChampions: async (page = 1, limit = 50) => {
+    const response = await api.get(`/api/v1/champions?page=${page}&limit=${limit}`);
+    return response.data?.data; // { champions }
+  },
+
+  createChampion: async (payload: any) => {
+    const isForm = typeof FormData !== 'undefined' && payload instanceof FormData;
+    const response = await api.post('/api/v1/champions', payload, isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
+    return response.data?.data; // { champion }
+  },
+
+  deleteChampion: async (championId: string) => {
+    const response = await api.delete(`/api/v1/champions/${championId}`);
+    return response.data;
+  },
+
+  // Mentors
+  getMentors: async (page = 1, limit = 50) => {
+    const response = await api.get(`/api/v1/mentors?page=${page}&limit=${limit}`);
+    return response.data?.data; // { mentors }
+  },
+
+  createMentor: async (payload: any) => {
+    const isForm = typeof FormData !== 'undefined' && payload instanceof FormData;
+    const response = await api.post('/api/v1/mentors', payload, isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
+    return response.data?.data; // { mentor }
+  },
+
+  deleteMentor: async (mentorId: string) => {
+    const response = await api.delete(`/api/v1/mentors/${mentorId}`);
+    return response.data;
   }
 };

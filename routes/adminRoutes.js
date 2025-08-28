@@ -7,7 +7,10 @@ import {
   deleteUser,
   bulkUpdateUsers,
   bulkDeleteUsers,
-  getDashboardStats
+  getDashboardStats,
+  createPremiumUser,
+  listPremiumUsers,
+  setPremiumStatus
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -33,5 +36,13 @@ router.route('/users/:id')
   .get(getUser)
   .patch(updateUser)
   .delete(deleteUser);
+
+// Premium users management
+router.route('/premium-users')
+  .get(listPremiumUsers)
+  .post(createPremiumUser);
+
+router.route('/premium-users/:id')
+  .patch(setPremiumStatus);
 
 export default router;

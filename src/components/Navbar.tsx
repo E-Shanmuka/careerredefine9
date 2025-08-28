@@ -15,7 +15,7 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -114,16 +114,27 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">CR</span>
-            </div>
-            <span className="text-xl font-bold text-gray-800">Career Redefine</span>
-          </div>
+          <Link to="/" className="flex items-center space-x-2">
+            <img src="/cr_logo.png" alt="Career Redefine" className="h-10 w-auto" />
+            <span className="sr-only">Career Redefine</span>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => renderNavItem(item))}
+            {user?.isPremium && (
+              <Link
+                to="/premium"
+                className={`relative text-sm font-medium transition-colors duration-200 hover:text-blue-600 ${
+                  location.pathname === '/premium' ? 'text-blue-600' : 'text-gray-700'
+                }`}
+              >
+                Premium
+                {location.pathname === '/premium' && (
+                  <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-blue-600 rounded-full"></div>
+                )}
+              </Link>
+            )}
           </div>
 
           {/* Auth Buttons */}
@@ -161,6 +172,17 @@ const Navbar = () => {
         >
           <div className="flex flex-col space-y-3">
             {navItems.map((item) => renderNavItem(item, true))}
+            {user?.isPremium && (
+              <Link
+                to="/premium"
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  location.pathname === '/premium' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
+                }`}
+                onClick={() => setIsOpen(false)}
+              >
+                Premium
+              </Link>
+            )}
             {isAuthenticated ? (
               <div className="pt-3 border-t">
                 <Link to="/profile" className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">

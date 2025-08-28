@@ -8,7 +8,7 @@ interface UserProfile {
   name: string;
   email: string;
   phone: string;
-  avatar?: string;
+  photo?: string;
   role?: string;
   createdAt?: string;
 }
@@ -27,7 +27,7 @@ const ProfilePage: React.FC = () => {
       name: user.name || '',
       email: user.email || '',
       phone: user.phone || '',
-      avatar: user.avatar
+      photo: user.photo
     });
   }, [user]);
 
@@ -40,16 +40,18 @@ const ProfilePage: React.FC = () => {
     if (!file || !user) return;
 
     const formData = new FormData();
-    formData.append('avatar', file);
+    formData.append('photo', file);
 
     try {
       setIsUploading(true);
-      const response = await api.patch(`/api/v1/users/${user.id}/avatar`, formData, {
+      const response = await api.patch(`/api/v1/users/update-me`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
-      updateUser({ ...user, avatar: response.data.data.avatar });
-      setEditedUser(prev => ({ ...prev, avatar: response.data.data.avatar }));
+      const updatedUser = (response as any)?.data?.data?.user ?? (response as any)?.data?.data;
+      const newPhoto = updatedUser?.photo ?? (response as any)?.data?.data?.photo;
+      if (updatedUser) updateUser(updatedUser);
+      if (newPhoto) setEditedUser(prev => ({ ...prev, photo: newPhoto }));
       toast.success('Profile picture updated successfully');
     } catch (error) {
       toast.error('Failed to upload profile picture');
@@ -63,8 +65,9 @@ const ProfilePage: React.FC = () => {
     if (!user) return;
     
     try {
-      const response = await api.patch(`/api/v1/users/${user.id}`, editedUser);
-      updateUser(response.data.data.user);
+      const response = await api.patch(`/api/v1/users/update-me`, editedUser);
+      const updatedUser = (response as any)?.data?.data?.user ?? (response as any)?.data?.data;
+      if (updatedUser) updateUser(updatedUser);
       toast.success('Profile updated successfully');
       setIsEditing(false);
     } catch (error) {
@@ -102,17 +105,14 @@ const ProfilePage: React.FC = () => {
             <div className="flex flex-col items-center sm:items-start sm:flex-row">
               <div className="relative group">
                 <div className="h-24 w-24 rounded-full bg-white flex items-center justify-center overflow-hidden">
-                  {editedUser.avatar ? (
-                    <img 
-                      src={editedUser.avatar} 
-                      alt={editedUser.name} 
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-3xl text-gray-600 font-bold">
-                      {user.name?.charAt(0).toUpperCase() || 'U'}
-                    </span>
-                  )}
+                  <img 
+                    src={editedUser.photo || '/defaultprofile.jpg'} 
+                    alt={editedUser.name}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/defaultprofile.jpg';
+                    }}
+                  />
                 </div>
                 {isEditing && (
                   <button

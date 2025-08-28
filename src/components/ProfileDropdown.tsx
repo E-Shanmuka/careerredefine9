@@ -35,8 +35,15 @@ const ProfileDropdown: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-2 focus:outline-none"
       >
-        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
-          {user.name.charAt(0).toUpperCase()}
+        <div className="w-10 h-10 rounded-full bg-blue-100 overflow-hidden flex items-center justify-center text-blue-600 font-semibold">
+          <img
+            src={user.photo || '/defaultprofile.jpg'}
+            alt={user.name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/defaultprofile.jpg';
+            }}
+          />
         </div>
       </button>
 

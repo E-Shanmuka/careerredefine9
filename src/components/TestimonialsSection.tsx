@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Quote, Star, Briefcase, TrendingUp } from 'lucide-react';
+import { fetchChampions } from '../services/championService';
 
 const TestimonialsSection = () => {
   const [activeIndex, setActiveIndex] = useState(0);
-
-  const testimonials = [
+  const staticTestimonials = [
     {
       name: "Dhanush",
       company: "Career Redefine",
@@ -39,13 +39,36 @@ const TestimonialsSection = () => {
       salaryIncrease: "—"
     }
   ];
+  const [testimonials, setTestimonials] = useState(staticTestimonials);
 
   useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const champions = await fetchChampions({ featured: true });
+        if (mounted && champions && champions.length > 0) {
+          const mapped = champions.map((c: any) => ({
+            name: c.name,
+            company: c.company,
+            beforeRole: c.beforeRole,
+            afterRole: c.afterRole,
+            image: c.image,
+            testimonial: c.testimonial,
+            rating: c.rating ?? 5,
+            salaryIncrease: '—',
+          }));
+          setTestimonials(mapped);
+        }
+      } catch (e) {
+        // Silent fallback to static testimonials
+      }
+    })();
+
     const interval = setInterval(() => {
-      setActiveIndex((prevIndex) => (prevIndex + 1) % testimonials.length);
+      setActiveIndex((prevIndex) => (prevIndex + 1) % (testimonials.length || 1));
     }, 6000);
 
-    return () => clearInterval(interval);
+    return () => { mounted = false; clearInterval(interval); };
   }, [testimonials.length]);
 
   const nextSlide = () => {

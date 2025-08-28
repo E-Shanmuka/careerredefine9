@@ -48,7 +48,12 @@ Job Description:\n${description || 'N/A'}`;
         {!error && !result && !loading && <p className="text-gray-500">Enter details and click Start Simulation.</p>}
         {result && (
           <article className="prose max-w-none">
-            <div dangerouslySetInnerHTML={{ __html: result.replace(/\n/g, '<br/>') }} />
+            {(() => {
+              const formatted = result
+                .replace(/^(\s*)([*-])\s+/gm, '$1• ')
+                .replace(/\n/g, '<br/>');
+              return <div dangerouslySetInnerHTML={{ __html: formatted }} />;
+            })()}
           </article>
         )}
       </div>

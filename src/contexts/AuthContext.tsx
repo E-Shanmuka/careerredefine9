@@ -6,10 +6,11 @@ export interface User {
   name: string;
   email: string;
   role: string;
-  avatar?: string;
+  photo?: string;
   phone?: string;
   address?: string;
   dob?: string;
+  isPremium?: boolean;
 }
 
 interface AuthContextType {
@@ -122,12 +123,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return user;
     } catch (error) {
       console.error('Login failed:', error);
+      // Extract server message if available
+      const serverMsg = (error as any)?.response?.data?.message || 'Login failed';
       // Clear any partial auth state on failure
       localStorage.removeItem('token');
       delete api.defaults.headers.common['Authorization'];
       setUser(null);
       setIsAuthenticated(false);
-      throw error;
+      // Rethrow a clean Error with backend message so UI can show it
+      throw new Error(serverMsg);
     }
   };
 

@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Please provide a password'],
-      minlength: 8,
+      minlength: 6,
       select: false,
     },
     phone: {
@@ -40,6 +40,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['user', 'admin'],
       default: 'user',
+    },
+    // Premium access flag
+    isPremium: {
+      type: Boolean,
+      default: false,
+      index: true
     },
     isVerified: {
       type: Boolean,

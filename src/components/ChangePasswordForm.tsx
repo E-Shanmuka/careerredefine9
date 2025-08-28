@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Key } from 'lucide-react';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ChangePasswordFormProps {
   onSuccess?: () => void;
@@ -14,6 +15,7 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onSuccess }) =>
     confirmPassword: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const { updateUser } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -38,11 +40,18 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onSuccess }) =>
     
     try {
       setIsLoading(true);
-      await api.patch('/api/v1/users/updateMyPassword', {
+      const { data } = await api.patch('/api/v1/users/update-password', {
         currentPassword: formData.currentPassword,
-        password: formData.newPassword,
-        passwordConfirm: formData.confirmPassword
+        newPassword: formData.newPassword,
+        newPasswordConfirm: formData.confirmPassword
       });
+      const newToken = (data as any)?.token ?? (data as any)?.data?.token;
+      const newUser = (data as any)?.data?.user;
+      if (newToken) {
+        localStorage.setItem('token', newToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      }
+      if (newUser) updateUser(newUser);
       
       toast.success('Password updated successfully!');
       setFormData({
