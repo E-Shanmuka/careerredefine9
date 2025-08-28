@@ -11,7 +11,8 @@ import {
   AcademicCapIcon,
   ChatBubbleLeftRightIcon,
   CalendarDaysIcon,
-  StarIcon
+  StarIcon,
+  TrophyIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -26,6 +27,8 @@ const navigation = [
   { name: 'Queries', href: '/admin#queries', icon: ChatBubbleLeftRightIcon, current: false },
   { name: 'Questions', href: '/admin#questions', icon: ChatBubbleLeftRightIcon, current: false },
   { name: 'Reviews', href: '/admin#reviews', icon: StarIcon, current: false },
+  { name: 'Resumes', href: '/admin#resumes', icon: DocumentTextIcon, current: false },
+  { name: 'Awards', href: '/admin#awards', icon: TrophyIcon, current: false },
 ];
 
 function classNames(...classes: string[]) {

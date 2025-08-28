@@ -290,9 +290,8 @@ app.post(
   '/api/v1/courses',
   protect,
   restrictTo('instructor', 'admin'),
-  courseController.uploadCourseImage,
+  courseController.uploadCourseAssets,
   courseController.resizeCourseImage,
-  courseController.uploadSyllabus,
   courseController.processSyllabus,
   courseController.createCourse
 );
@@ -300,9 +299,8 @@ app.patch(
   '/api/v1/courses/:id',
   protect,
   restrictTo('instructor', 'admin'),
-  courseController.uploadCourseImage,
+  courseController.uploadCourseAssets,
   courseController.resizeCourseImage,
-  courseController.uploadSyllabus,
   courseController.processSyllabus,
   courseController.updateCourse
 );
@@ -539,6 +537,8 @@ app.get('/api/v1/queries/admin/all', protect, restrictTo('admin'), queryControll
 app.get('/api/v1/queries/stats/query-stats', protect, restrictTo('admin'), queryController.getQueryStats);
 app.patch('/api/v1/queries/:id/status', protect, restrictTo('admin'), queryController.updateQueryStatus);
 app.post('/api/v1/queries/:id/reply', protect, restrictTo('admin'), queryController.replyToQuery);
+// Admin: hard delete a query
+app.delete('/api/v1/queries/:id', protect, restrictTo('admin'), queryController.deleteQuery);
 
 
 // ----- Questions -----
@@ -614,6 +614,8 @@ app.get('/api/v1/bookings', protect, restrictTo('admin'), bookingController.getA
 app.post('/api/v1/bookings/:id/notes', protect, restrictTo('admin'), bookingController.addAdminNote);
 app.get('/api/v1/bookings/status/:status', protect, restrictTo('admin'), bookingController.getAllBookings);
 app.get('/api/v1/bookings/date-range', protect, restrictTo('admin'), bookingController.getAllBookings);
+// Admin: hard delete booking (keeps existing cancel, accept/reject & meeting link flows intact)
+app.delete('/api/v1/bookings/:id/hard-delete', protect, restrictTo('admin'), bookingController.deleteBooking);
 
 // ----- AI -----
 app.get('/api/v1/ai/health', aiController.health);
@@ -632,6 +634,11 @@ app.post(
   resumeController.uploadResume,
   resumeController.analyzeResume
 );
+// Resume listing and retrieval
+app.get('/api/v1/resume', protect, restrictTo('admin'), resumeController.listResumes);
+app.get('/api/v1/resume/mine', protect, resumeController.listMyResumes);
+app.get('/api/v1/resume/:id', protect, resumeController.getResume);
+app.delete('/api/v1/resume/:id', protect, restrictTo('admin'), resumeController.deleteResume);
 
 // In production, serve static files from the Vite build
 if (process.env.NODE_ENV === 'production') {
@@ -806,7 +813,7 @@ async function startViteDevServer() {
               <meta charset="UTF-8" />
               <meta name="viewport" content="width=device-width, initial-scale=1.0" />
               <link rel="icon" type="image/x-icon" href="/favicon.ico">
-              <title>AI Kannada Platform</title>
+              <title>careerRedefine Platform</title>
             </head>
             <body>
               <div id="root"></div>

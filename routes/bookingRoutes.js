@@ -27,6 +27,9 @@ router.use(restrictTo('admin'));
 router.get('/', bookingController.getAllBookings);
 router.post('/:id/notes', bookingController.addAdminNote);
 
+// Hard delete (admin only)
+router.delete('/:id/hard-delete', bookingController.deleteBooking);
+
 // Get bookings by status
 router.get('/status/:status', bookingController.getAllBookings);
 

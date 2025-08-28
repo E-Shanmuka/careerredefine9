@@ -51,7 +51,7 @@ export const processReviewImages = async (req, res, next) => {
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
-            folder: 'ai-kannada/reviews',
+            folder: 'career-redefine/reviews',
             public_id: `review-${Date.now()}-${Math.round(Math.random() * 1e9)}`,
           },
           (error, result) => {

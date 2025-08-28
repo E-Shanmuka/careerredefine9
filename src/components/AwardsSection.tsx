@@ -1,53 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Award, Trophy, Star } from 'lucide-react';
+import api from '../utils/api';
 
 const AwardsSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [awards, setAwards] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const awards = [
-    {
-      title: "Best GenAI Training Partner",
-      organization: "UBS Forums",
-      description: "Recognized as the premier training partner for Generative AI education and implementation across enterprise clients.",
-      image: "https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=600",
-      year: "2024",
-      icon: Trophy
-    },
-    {
-      title: "Guinness World Record",
-      organization: "Guinness World Records",
-      description: "Achieved the record for the most users to take an Artificial Intelligence lesson in 24 hours, demonstrating our massive reach and impact.",
-      image: "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=600",
-      year: "2023",
-      icon: Award
-    },
-    {
-      title: "Excellence in EdTech Innovation",
-      organization: "Tech Excellence Awards",
-      description: "Awarded for outstanding innovation in educational technology and personalized learning experiences.",
-      image: "https://images.pexels.com/photos/3184298/pexels-photo-3184298.jpeg?auto=compress&cs=tinysrgb&w=600",
-      year: "2024",
-      icon: Star
+  const iconForCategory = (category?: string) => {
+    switch ((category || '').toLowerCase()) {
+      case 'professional':
+        return Trophy;
+      case 'academic':
+        return Award;
+      default:
+        return Star;
     }
-  ];
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAwards = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Try featured first
+        const resFeatured = await api.get('/api/v1/awards/featured', { params: { limit: 5 } });
+        let list = (resFeatured.data?.data?.awards ?? []) as any[];
+
+        // Fallback to general list if featured empty
+        if (!list.length) {
+          const resAll = await api.get('/api/v1/awards', { params: { limit: 5, sort: '-date' } });
+          list = (resAll.data?.data?.awards ?? []) as any[];
+        }
+
+        // Normalize into UI model
+        const normalized = list.map((a) => ({
+          _id: a._id,
+          title: a.title,
+          organization: a.issuedBy,
+          description: a.description,
+          image: a.image,
+          year: a.date ? String(new Date(a.date).getFullYear()) : '',
+          icon: iconForCategory(a.category),
+        }));
+
+        if (isMounted) {
+          setAwards(normalized);
+          setCurrentSlide(0);
+        }
+      } catch (e: any) {
+        if (isMounted) setError(e?.response?.data?.message || 'Failed to load awards');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchAwards();
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     if (!isAutoPlaying) return;
+    if (awards.length <= 1) return;
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % awards.length);
+      setCurrentSlide((prev) => (prev + 1) % (awards.length || 1));
     }, 5000);
 
     return () => clearInterval(interval);
   }, [isAutoPlaying, awards.length]);
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % awards.length);
+    setCurrentSlide((prev) => (prev + 1) % (awards.length || 1));
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + awards.length) % awards.length);
+    setCurrentSlide((prev) => (prev - 1 + (awards.length || 1)) % (awards.length || 1));
   };
 
   const goToSlide = (index: number) => {
@@ -91,11 +121,20 @@ const AwardsSection = () => {
         <div className="relative max-w-6xl mx-auto">
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border border-gray-200">
             <div className="relative h-96 md:h-[500px]">
+              {loading && (
+                <div className="absolute inset-0 flex items-center justify-center text-gray-500">Loading awards...</div>
+              )}
+              {error && !loading && (
+                <div className="absolute inset-0 flex items-center justify-center text-red-500">{error}</div>
+              )}
+              {!loading && !error && awards.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center text-gray-500">No awards to display</div>
+              )}
               {awards.map((award, index) => {
                 const IconComponent = award.icon;
                 return (
                   <div
-                    key={index}
+                    key={award._id || index}
                     className={`absolute inset-0 transition-all duration-700 ease-in-out transform ${
                       index === currentSlide
                         ? 'translate-x-0 opacity-100 scale-100'
@@ -167,7 +206,7 @@ const AwardsSection = () => {
             <button
               onClick={prevSlide}
               className="p-3 bg-white shadow-lg rounded-full hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-300 group"
-            >
+              >
               <ChevronLeft className="w-6 h-6 text-gray-600 group-hover:text-blue-600" />
             </button>
 
@@ -189,7 +228,7 @@ const AwardsSection = () => {
             <button
               onClick={nextSlide}
               className="p-3 bg-white shadow-lg rounded-full hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-300 group"
-            >
+              >
               <ChevronRight className="w-6 h-6 text-gray-600 group-hover:text-blue-600" />
             </button>
           </div>

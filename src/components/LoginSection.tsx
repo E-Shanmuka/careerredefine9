@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, LogIn, Github } from 'lucide-react';
+import { Mail, Lock, LogIn } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
@@ -102,27 +102,6 @@ const LoginSection: React.FC = () => {
               </button>
             </form>
 
-            <div className="mt-8 text-center">
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
-                </div>
-              </div>
-
-              <div className="flex justify-center space-x-4">
-                <button className="flex items-center justify-center w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                  <img src="https://www.google.com/favicon.ico" alt="Google" className="h-5 w-5 mr-2" />
-                  Google
-                </button>
-                <button className="flex items-center justify-center w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                  <Github className="h-5 w-5 mr-2 text-gray-800" />
-                  GitHub
-                </button>
-              </div>
-            </div>
 
             <p className="mt-8 text-center text-sm text-gray-600">
               Don't have an account?{' '}

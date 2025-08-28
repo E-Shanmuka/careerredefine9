@@ -33,13 +33,18 @@ const DashboardPage: React.FC = () => {
   const [apptActionState, setApptActionState] = useState<Record<string, { meetingLink?: string; message?: string; loading?: 'accept' | 'reject' | null }>>({});
 
   // Minimal create forms state
-  const [courseForm, setCourseForm] = useState({ title: '', description: '', shortDescription: '', price: '', duration: '', level: 'beginner', category: '' });
+  const [courseForm, setCourseForm] = useState({ title: '', description: '', shortDescription: '', price: '', duration: '', level: 'beginner', category: '', pageLink: '' });
   const [courseImage, setCourseImage] = useState<File | null>(null);
   const [articleForm, setArticleForm] = useState({ title: '', summary: '', content: '', tags: '' });
   const [articleImage, setArticleImage] = useState<File | null>(null);
   const [jobForm, setJobForm] = useState({ title: '', company: '', location: '', type: 'full-time', category: '', description: '', applicationUrl: '' });
   const [jobLogo, setJobLogo] = useState<File | null>(null);
+  const [awardForm, setAwardForm] = useState({ title: '', description: '', issuedBy: '', date: '', category: 'other', isFeatured: false });
+  const [awardImage, setAwardImage] = useState<File | null>(null);
   const [creating, setCreating] = useState(false);
+  const [resumeModalOpen, setResumeModalOpen] = useState(false);
+  const [selectedResume, setSelectedResume] = useState<any | null>(null);
+  const [resumeLoading, setResumeLoading] = useState(false);
 
   // State for on-demand bookings
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -47,6 +52,23 @@ const DashboardPage: React.FC = () => {
   const [bookingsLoaded, setBookingsLoaded] = useState(false);
   const [creatingBooking, setCreatingBooking] = useState(false);
   const [bookingForm, setBookingForm] = useState({ name: '', email: '', phone: '', message: '', date: '', timeSlot: '', type: 'consultation' });
+
+  // View resume in modal
+  const handleViewResume = async (id: string) => {
+    try {
+      setResumeLoading(true);
+      setResumeModalOpen(true);
+      setSelectedResume(null);
+      const resp = await adminService.getResumeById(id);
+      setSelectedResume(resp?.resume);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Unknown error';
+      alert(`Failed to load resume. ${msg}`);
+      setResumeModalOpen(false);
+    } finally {
+      setResumeLoading(false);
+    }
+  };
 
   // Fetch main dashboard stats on initial load
   useEffect(() => {
@@ -93,6 +115,10 @@ const DashboardPage: React.FC = () => {
             response = await adminService.getCourses(1, 50);
             dataKey = 'courses';
             break;
+          case 'awards':
+            response = await adminService.getAwards(1, 50);
+            dataKey = 'awards';
+            break;
           case 'articles':
             response = await adminService.getArticles(1, 50);
             dataKey = 'articles';
@@ -113,6 +139,10 @@ const DashboardPage: React.FC = () => {
           case 'appointments':
             response = await adminService.getBookings(1, 50);
             dataKey = 'bookings';
+            break;
+          case 'resumes':
+            response = await adminService.getResumes(1, 50);
+            dataKey = 'resumes';
             break;
           default:
             setSectionLoading(false);
@@ -142,14 +172,19 @@ const DashboardPage: React.FC = () => {
         user: adminService.deleteUser,
         job: adminService.deleteJob,
         course: adminService.deleteCourse,
+        award: adminService.deleteAward,
         article: adminService.deleteArticle,
         review: adminService.deleteReview,
         query: adminService.deleteQuery,
         question: adminService.deleteQuestion,
         booking: adminService.deleteBooking,
+        resume: adminService.deleteResume,
       };
       await deleteActions[itemType](id);
       setData(prevData => prevData.filter(item => item._id !== id));
+      if (itemType === 'booking') {
+        setAppointments(prev => prev.filter(item => item._id !== id));
+      }
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Unknown error';
       alert(`Failed to delete ${itemType}. ${msg}`);
@@ -215,11 +250,13 @@ const DashboardPage: React.FC = () => {
     const columns: { [key: string]: string[] } = {
       users: ['Name', 'Email', 'Role', 'Joined'],
       jobs: ['Title', 'Company', 'Location', 'Type'],
-      courses: ['Title', 'Price', 'Duration', 'Level'],
+      courses: ['Title', 'Price', 'Duration', 'Level', 'Page Link'],
+      awards: ['Title', 'Issued By', 'Date', 'Category', 'Featured'],
       articles: ['Title', 'Summary', 'Tags'],
       reviews: ['User', 'Course', 'Rating', 'Comment'],
       queries: ['Name', 'Email', 'Subject', 'Date'],
       questions: ['Subject', 'Name', 'Email', 'Date'],
+      resumes: ['Filename', 'User', 'Type', 'Size', 'Uploaded'],
     };
 
     const renderers: { [key: string]: (item: any) => React.ReactNode } = {
@@ -245,6 +282,29 @@ const DashboardPage: React.FC = () => {
           <td>{item.price}</td>
           <td>{item.duration}</td>
           <td>{item.level}</td>
+          <td>
+            {item.pageLink ? (
+              <a
+                href={item.pageLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                Open
+              </a>
+            ) : (
+              '-' 
+            )}
+          </td>
+        </>
+      ),
+      awards: (item) => (
+        <>
+          <td>{item.title}</td>
+          <td>{item.issuedBy}</td>
+          <td>{formatDate(item.date)}</td>
+          <td>{item.category}</td>
+          <td>{item.isFeatured ? 'Yes' : 'No'}</td>
         </>
       ),
       articles: (item) => (
@@ -278,10 +338,19 @@ const DashboardPage: React.FC = () => {
           <td>{formatDate(item.createdAt)}</td>
         </>
       ),
+      resumes: (item) => (
+        <>
+          <td>{item.filename}</td>
+          <td>{item.user ? `${item.user.name} (${item.user.email})` : '—'}</td>
+          <td>{item.mimetype}</td>
+          <td>{Math.round((item.size || 0) / 1024)} KB</td>
+          <td>{formatDate(item.createdAt)}</td>
+        </>
+      ),
     };
 
     if (section === 'bookings' || section === 'appointments') {
-      return <AppointmentManager data={data} apptActionState={apptActionState} setApptActionState={setApptActionState} onAccept={handleAcceptAppointment} onReject={handleRejectAppointment} formatDate={formatDate} />;
+      return <AppointmentManager data={data} apptActionState={apptActionState} setApptActionState={setApptActionState} onAccept={handleAcceptAppointment} onReject={handleRejectAppointment} onDelete={(id: string) => handleDelete('booking', id)} formatDate={formatDate} />;
     }
 
     const createBar = (
@@ -303,9 +372,10 @@ const DashboardPage: React.FC = () => {
                 fd.append('duration', String(Number(courseForm.duration) || 1));
                 fd.append('level', courseForm.level);
                 fd.append('category', courseForm.category);
+                if (courseForm.pageLink) fd.append('pageLink', courseForm.pageLink);
                 fd.append('image', courseImage);
                 await adminService.createCourse(fd);
-                setCourseForm({ title: '', description: '', shortDescription: '', price: '', duration: '', level: 'beginner', category: '' });
+                setCourseForm({ title: '', description: '', shortDescription: '', price: '', duration: '', level: 'beginner', category: '', pageLink: '' });
                 setCourseImage(null);
                 // refresh
                 const response = await adminService.getCourses(1, 50);
@@ -327,9 +397,54 @@ const DashboardPage: React.FC = () => {
               <option value="intermediate">intermediate</option>
               <option value="advanced">advanced</option>
             </select>
+            <input className="border rounded px-3 py-2 text-sm md:col-span-2" placeholder="Page Link (optional)" value={courseForm.pageLink} onChange={(e) => setCourseForm((s) => ({ ...s, pageLink: e.target.value }))} />
             <input className="border rounded px-3 py-2 text-sm md:col-span-3" placeholder="Description" value={courseForm.description} onChange={(e) => setCourseForm((s) => ({ ...s, description: e.target.value }))} />
             <input type="file" accept="image/*" className="border rounded px-3 py-2 text-sm md:col-span-3" onChange={(e) => setCourseImage(e.target.files?.[0] || null)} />
             <div className="flex justify-end md:col-span-6"><button type="submit" disabled={creating} className={`inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-white ${creating ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}>{creating ? 'Creating…' : 'Add Course'}</button></div>
+          </form>
+        )}
+        {section === 'awards' && (
+          <form
+            className="grid grid-cols-1 md:grid-cols-6 gap-3"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!awardForm.title || !awardForm.description || !awardForm.issuedBy || !awardForm.date) return alert('Title, Description, Issued By and Date are required');
+              if (!awardImage) return alert('Award image is required');
+              try {
+                setCreating(true);
+                const fd = new FormData();
+                fd.append('title', awardForm.title);
+                fd.append('description', awardForm.description);
+                fd.append('issuedBy', awardForm.issuedBy);
+                fd.append('date', awardForm.date);
+                fd.append('category', awardForm.category);
+                fd.append('isFeatured', String(awardForm.isFeatured));
+                fd.append('image', awardImage);
+                await adminService.createAward(fd);
+                setAwardForm({ title: '', description: '', issuedBy: '', date: '', category: 'other', isFeatured: false });
+                setAwardImage(null);
+                const response = await adminService.getAwards(1, 50);
+                setData(response.awards || []);
+              } catch (err: any) {
+                alert(err?.response?.data?.message || 'Failed to create award');
+              } finally {
+                setCreating(false);
+              }
+            }}
+          >
+            <input className="border rounded px-3 py-2 text-sm" placeholder="Title" value={awardForm.title} onChange={(e) => setAwardForm((s) => ({ ...s, title: e.target.value }))} />
+            <input className="border rounded px-3 py-2 text-sm" placeholder="Issued By" value={awardForm.issuedBy} onChange={(e) => setAwardForm((s) => ({ ...s, issuedBy: e.target.value }))} />
+            <input type="date" className="border rounded px-3 py-2 text-sm" value={awardForm.date} onChange={(e) => setAwardForm((s) => ({ ...s, date: e.target.value }))} />
+            <select className="border rounded px-3 py-2 text-sm" value={awardForm.category} onChange={(e) => setAwardForm((s) => ({ ...s, category: e.target.value }))}>
+              <option value="academic">academic</option>
+              <option value="professional">professional</option>
+              <option value="community">community</option>
+              <option value="other">other</option>
+            </select>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={awardForm.isFeatured} onChange={(e) => setAwardForm((s) => ({ ...s, isFeatured: e.target.checked }))} /> Featured</label>
+            <input className="border rounded px-3 py-2 text-sm md:col-span-3" placeholder="Description" value={awardForm.description} onChange={(e) => setAwardForm((s) => ({ ...s, description: e.target.value }))} />
+            <input type="file" accept="image/*" className="border rounded px-3 py-2 text-sm md:col-span-3" onChange={(e) => setAwardImage(e.target.files?.[0] || null)} />
+            <div className="flex justify-end md:col-span-6"><button type="submit" disabled={creating} className={`inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-white ${creating ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}>{creating ? 'Creating…' : 'Add Award'}</button></div>
           </form>
         )}
         {section === 'articles' && (
@@ -418,14 +533,66 @@ const DashboardPage: React.FC = () => {
       </div>
     );
 
+    const sectionToType: Record<string, string> = {
+      users: 'user',
+      jobs: 'job',
+      courses: 'course',
+      awards: 'award',
+      articles: 'article',
+      reviews: 'review',
+      queries: 'query',
+      questions: 'question',
+      resumes: 'resume',
+      bookings: 'booking',
+      appointments: 'booking',
+    };
+
     return <>
       {createBar}
       <ManagementTable title={section} items={data} columns={[...columns[section], 'Actions']} renderRow={(item) => (
       <tr key={item._id}>
         {renderers[section](item)}
-        <td><button onClick={() => handleDelete(section.slice(0, -1), item._id)} disabled={deletingId === item._id} className="bg-red-500 text-white px-2 py-1 rounded">Delete</button></td>
+        <td className="space-x-2">
+          {section === 'resumes' && (
+            <button onClick={() => handleViewResume(item._id)} className="bg-blue-600 text-white px-2 py-1 rounded">View</button>
+          )}
+          <button onClick={() => handleDelete(sectionToType[section] || section, item._id)} disabled={deletingId === item._id} className="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+        </td>
       </tr>
     )} />
+
+      {resumeModalOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 relative">
+            <button className="absolute right-3 top-3 text-gray-600" onClick={() => setResumeModalOpen(false)}>✕</button>
+            <h3 className="text-xl font-semibold mb-4">Resume Details</h3>
+            {resumeLoading && <p>Loading…</p>}
+            {!resumeLoading && selectedResume && (
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600">Filename: <span className="font-medium text-gray-900">{selectedResume.filename}</span></div>
+                <div className="text-sm text-gray-600">Type: <span className="font-medium text-gray-900">{selectedResume.mimetype}</span></div>
+                <div className="text-sm text-gray-600">Size: <span className="font-medium text-gray-900">{Math.round((selectedResume.size||0)/1024)} KB</span></div>
+                <div className="text-sm text-gray-600">Uploaded: <span className="font-medium text-gray-900">{formatDate(selectedResume.createdAt)}</span></div>
+                {selectedResume.user && (
+                  <div className="text-sm text-gray-600">User: <span className="font-medium text-gray-900">{selectedResume.user.name} ({selectedResume.user.email})</span></div>
+                )}
+                {selectedResume.analysis && (
+                  <div>
+                    <div className="font-semibold mb-1">AI Analysis</div>
+                    <div className="prose max-h-64 overflow-auto whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded">{selectedResume.analysis}</div>
+                  </div>
+                )}
+                {!selectedResume.analysis && selectedResume.extractedText && (
+                  <div>
+                    <div className="font-semibold mb-1">Extracted Text</div>
+                    <div className="max-h-64 overflow-auto whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded">{selectedResume.extractedText}</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>;
   };
 
@@ -518,7 +685,7 @@ const DashboardPage: React.FC = () => {
                       </div>
                       {(bookingsLoaded ? appointments : []).slice(0, 5).map((appt) => (
                         <div key={appt._id} className="px-6 py-4">
-                          <AppointmentManager data={[appt]} apptActionState={apptActionState} setApptActionState={setApptActionState} onAccept={handleAcceptAppointment} onReject={handleRejectAppointment} formatDate={formatDate} isSingleView={true} />
+                          <AppointmentManager data={[appt]} apptActionState={apptActionState} setApptActionState={setApptActionState} onAccept={handleAcceptAppointment} onReject={handleRejectAppointment} onDelete={(id: string) => handleDelete('booking', id)} formatDate={formatDate} isSingleView={true} />
                         </div>
                       ))}
                       {(!bookingsLoaded) && (
@@ -583,7 +750,7 @@ const ManagementTable = ({ title, items, columns, renderRow }: { title: string; 
   </div>
 );
 
-const AppointmentManager = ({ data, apptActionState, setApptActionState, onAccept, onReject, formatDate, isSingleView = false }: any) => (
+const AppointmentManager = ({ data, apptActionState, setApptActionState, onAccept, onReject, onDelete, formatDate, isSingleView = false }: any) => (
   <div>
     {!isSingleView && <h2 className="text-2xl font-bold mb-4">Manage Appointments</h2>}
     {data.map((appt: any) => (
@@ -605,6 +772,9 @@ const AppointmentManager = ({ data, apptActionState, setApptActionState, onAccep
             {apptActionState[appt._id]?.message && <p className="text-sm mt-2">{apptActionState[appt._id]?.message}</p>}
           </div>
         )}
+        <div className="mt-4">
+          <button onClick={() => onDelete(appt._id)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete</button>
+        </div>
       </div>
     ))}
   </div>

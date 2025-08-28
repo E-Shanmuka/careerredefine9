@@ -195,7 +195,7 @@ export const deleteAward = async (req, res) => {
     // If there's an image, delete it from Cloudinary
     if (award.image) {
       const publicId = award.image.split('/').pop().split('.')[0];
-      await cloudinary.uploader.destroy(`ai-kannada/awards/${publicId}`);
+      await cloudinary.uploader.destroy(`career-redefine/awards/${publicId}`);
     }
 
     res.status(204).json({
@@ -243,7 +243,7 @@ export const resizeAwardImage = async (req, res, next) => {
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
-          folder: 'ai-kannada/awards',
+          folder: 'career-redefine/awards',
           public_id: `award-${Date.now()}`,
         },
         (error, result) => {

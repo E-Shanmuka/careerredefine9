@@ -68,8 +68,18 @@ const QueryForm: React.FC<QueryFormProps> = ({ courseId, courseName, defaultSubj
       <h2 className="text-xl font-semibold mb-4">Have a Question?</h2>
       
       {submitSuccess && (
-        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md">
-          Your query has been submitted successfully. We'll get back to you soon!
+        <div className="mb-4 w-full max-w-sm">
+          <div className="rounded-xl border border-green-200 shadow-sm bg-white">
+            <div className="p-4 flex items-start gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-700 text-lg">✓</div>
+              <div className="flex-1">
+                <p className="font-medium text-gray-900">Query sent successfully</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Thanks! Your message was sent to careerRedefine. We\'ll get back to you shortly. An admin has also been notified.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
       

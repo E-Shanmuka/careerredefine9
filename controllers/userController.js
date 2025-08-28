@@ -169,7 +169,7 @@ export const resizeUserPhoto = async (req, res, next) => {
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
-          folder: 'ai-kannada/users',
+          folder: 'career-redefine/users',
           public_id: `user-${req.user.id}-${Date.now()}`,
         },
         (error, result) => {

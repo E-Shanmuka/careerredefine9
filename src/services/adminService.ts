@@ -54,6 +54,11 @@ export const adminService = {
     const response = await api.get(`/api/v1/awards?page=${page}&limit=${limit}`);
     return response.data?.data; // { awards }
   },
+  createAward: async (payload: any) => {
+    const isForm = typeof FormData !== 'undefined' && payload instanceof FormData;
+    const response = await api.post('/api/v1/awards', payload, isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
+    return response.data?.data; // { award }
+  },
   
   getArticles: async (page = 1, limit = 10) => {
     const response = await api.get(`/api/v1/articles?page=${page}&limit=${limit}`);
@@ -75,6 +80,25 @@ export const adminService = {
     // Appointments are implemented as bookings; admin list is at /api/v1/bookings
     const response = await api.get(`/api/v1/bookings?page=${page}&limit=${limit}`);
     return response.data?.data; // { bookings }
+  },
+
+  // Resumes (admin)
+  getResumes: async (page = 1, limit = 50) => {
+    // Backend returns { status, results, data: { resumes } }
+    const response = await api.get(`/api/v1/resume?page=${page}&limit=${limit}`);
+    return response.data?.data; // { resumes }
+  },
+
+  // Resume by ID (admin or owner)
+  getResumeById: async (id: string) => {
+    const response = await api.get(`/api/v1/resume/${id}`);
+    return response.data?.data; // { resume }
+  },
+
+  // Resumes (current user)
+  getMyResumes: async () => {
+    const response = await api.get('/api/v1/resume/mine');
+    return response.data?.data; // { resumes }
   },
   
   updateBookingStatus: async (
@@ -127,13 +151,24 @@ export const adminService = {
     return response.data;
   },
 
+  deleteAward: async (awardId: string) => {
+    const response = await api.delete(`/api/v1/awards/${awardId}`);
+    return response.data;
+  },
+
   deleteReview: async (reviewId: string) => {
     const response = await api.delete(`/api/v1/reviews/${reviewId}`);
     return response.data;
   },
 
   deleteBooking: async (bookingId: string) => {
-    const response = await api.delete(`/api/v1/bookings/${bookingId}`);
+    // Use admin hard-delete endpoint to avoid interfering with existing workflows
+    const response = await api.delete(`/api/v1/bookings/${bookingId}/hard-delete`);
+    return response.data;
+  },
+
+  deleteResume: async (resumeId: string) => {
+    const response = await api.delete(`/api/v1/resume/${resumeId}`);
     return response.data;
   },
 

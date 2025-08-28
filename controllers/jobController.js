@@ -220,7 +220,7 @@ export const resizeJobLogo = async (req, res, next) => {
 
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: 'ai-kannada/jobs/logos', public_id: `job-logo-${Date.now()}` },
+        { folder: 'career-redefine/jobs/logos', public_id: `job-logo-${Date.now()}` },
         (error, result) => error ? reject(error) : resolve(result)
       );
       stream.end(resizedImage);

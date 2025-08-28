@@ -346,27 +346,40 @@ export const enrollInCourse = async (req, res) => {
   }
 };
 
-// Upload course image
+// Upload course files (image + syllabus) in a single multipart pass
 const storage = multer.memoryStorage();
 
-export const uploadCourseImage = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+export const uploadCourseAssets = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // per-file limit
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Not an image! Please upload only images.'), false);
+    try {
+      if (file.fieldname === 'image') {
+        if (file.mimetype.startsWith('image/')) return cb(null, true);
+        return cb(new Error('Not an image! Please upload only images.'));
+      }
+      if (file.fieldname === 'syllabus') {
+        if (file.mimetype === 'application/pdf') return cb(null, true);
+        return cb(new Error('Only PDF files are allowed for syllabus'));
+      }
+      // Disallow unexpected file fields
+      return cb(new Error('Unexpected file field'));
+    } catch (e) {
+      return cb(e);
     }
   },
-}).single('image');
+}).fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'syllabus', maxCount: 1 },
+]);
 
 export const resizeCourseImage = async (req, res, next) => {
   try {
-    if (!req.file) return next();
+    const file = Array.isArray(req.files?.image) ? req.files.image[0] : undefined;
+    if (!file) return next();
 
     // Process the image with Sharp
-    const resizedImage = await sharp(req.file.buffer)
+    const resizedImage = await sharp(file.buffer)
       .resize(1200, 630, {
         fit: 'cover',
         position: 'center',
@@ -379,7 +392,7 @@ export const resizeCourseImage = async (req, res, next) => {
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
-          folder: 'ai-kannada/courses',
+          folder: 'career-redefine/courses',
           public_id: `course-${Date.now()}`,
         },
         (error, result) => {
@@ -405,29 +418,17 @@ export const resizeCourseImage = async (req, res, next) => {
   }
 };
 
-// Upload course syllabus (PDF)
-export const uploadSyllabus = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF files are allowed for syllabus'), false);
-    }
-  },
-}).single('syllabus');
-
 export const processSyllabus = async (req, res, next) => {
   try {
-    if (!req.file) return next();
+    const file = Array.isArray(req.files?.syllabus) ? req.files.syllabus[0] : undefined;
+    if (!file) return next();
 
     // Upload PDF to Cloudinary
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
           resource_type: 'raw',
-          folder: 'ai-kannada/syllabus',
+          folder: 'career-redefine/syllabus',
           public_id: `syllabus-${Date.now()}`,
         },
         (error, result) => {
@@ -439,7 +440,7 @@ export const processSyllabus = async (req, res, next) => {
         }
       );
 
-      stream.end(req.file.buffer);
+      stream.end(file.buffer);
     });
 
     // Save the Cloudinary URL to the request object

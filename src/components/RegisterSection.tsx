@@ -68,7 +68,7 @@ const RegisterSection: React.FC = () => {
       };
       
       // Try to sign up the user
-      const response = await axios.post(`${API_URL}/auth/signup`, userData);
+      await axios.post(`${API_URL}/auth/signup`, userData);
       
       // If we get here, the user either:
       // 1. Is new and needs to verify their email (status 201)
@@ -127,19 +127,7 @@ const RegisterSection: React.FC = () => {
     setError('');
   };
   
-  const registerUser = async (userData: FormData) => {
-    try {
-      const response = await axios.post(`${API_URL}/auth/register`, userData);
-      
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        navigate('/dashboard');
-      }
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Registration failed. Please try again.');
-      throw error;
-    }
-  };
+  
 
   if (showOTP && tempUserData) {
     return (
@@ -188,22 +176,7 @@ const RegisterSection: React.FC = () => {
           <h2 className="text-3xl font-bold text-gray-800 mb-4">Get Started</h2>
           <p className="text-gray-600 mb-8">Create your account to begin your journey.</p>
 
-          <div className="flex gap-4 mb-6">
-            <button className="w-full py-3 px-4 border border-gray-300 rounded-lg flex items-center justify-center text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 mr-2" />
-              Sign up with Google
-            </button>
-            <button className="w-full py-3 px-4 border border-gray-300 rounded-lg flex items-center justify-center text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
-              <img src="https://www.svgrepo.com/show/512317/github-142.svg" alt="GitHub" className="w-5 h-5 mr-2" />
-              Sign up with GitHub
-            </button>
-          </div>
-
-          <div className="flex items-center my-6">
-            <div className="flex-grow border-t border-gray-300"></div>
-            <span className="mx-4 text-sm font-medium text-gray-500">OR</span>
-            <div className="flex-grow border-t border-gray-300"></div>
-          </div>
+          
 
           {error && (
             <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">

@@ -381,3 +381,26 @@ export const getAvailableSlots = async (req, res) => {
     });
   }
 };
+
+// Hard delete a booking (admin only)
+export const deleteBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findByIdAndDelete(id);
+
+    if (!booking) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'No booking found with that ID'
+      });
+    }
+
+    return res.status(204).json({ status: 'success', data: null });
+  } catch (err) {
+    console.error('deleteBooking error:', err);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Error deleting booking'
+    });
+  }
+};
