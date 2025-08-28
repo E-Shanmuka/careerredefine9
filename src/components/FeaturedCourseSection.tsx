@@ -5,7 +5,6 @@ import { courseService, Course } from '../services/courseService';
 const FeaturedCourseSection = () => {
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -16,7 +15,6 @@ const FeaturedCourseSection = () => {
         if (mounted) setCourse(popular[0] || null);
       } catch (e) {
         console.error('Failed to load featured course', e);
-        if (mounted) setError('Failed to load featured course');
       } finally {
         if (mounted) setLoading(false);
       }
@@ -24,16 +22,15 @@ const FeaturedCourseSection = () => {
     return () => { mounted = false; };
   }, []);
 
+  if (!loading && !course) return null;
+
   return (
-    <section className="py-20 bg-blue-50">
+    <section className="py-16 bg-blue-50">
       <div className="container mx-auto px-4">
         {loading && (
           <div className="text-center text-gray-600">Loading featured course...</div>
         )}
-        {error && (
-          <div className="text-center text-red-600">{error}</div>
-        )}
-        {!loading && !error && course && (
+        {!loading && course && (
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-8 md:mb-0">
               <img

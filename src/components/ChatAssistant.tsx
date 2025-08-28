@@ -10,6 +10,7 @@ import {
   Users,
   Zap
 } from 'lucide-react';
+import { aiService } from '../services/aiService';
 
 interface Message {
   id: number;
@@ -31,6 +32,17 @@ const ChatAssistant = () => {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // System context for Gemini
+  const SYSTEM_CONTEXT = `You are Career Redefine's friendly representative assistant. Be concise, helpful, and positive.
+
+Company context:
+Career Redefine is a career development and skill-building platform that helps students, professionals, and job seekers improve their employability and future opportunities. It provides courses, workshops, and training programs focused on areas such as soft skills, communication, interview preparation, resume building, career guidance, and technical upskilling. The platform also offers mentorship, career counseling, and personality development sessions to guide individuals toward the right career path. In addition to courses, Career Redefine gives access to practice interviews, job readiness programs, placement support, and skill certification, ensuring learners are well-prepared for both academic and professional success. It includes interactive options like live classes, recorded sessions, community discussions, and personalized guidance, making it a one-stop solution for anyone looking to redefine their career and build future-ready skills.
+
+Policy:
+- If asked about price/fees/cost/tuition, DO NOT provide any numbers. Reply exactly: "Please contact our team directly at 📞 +91 8618536940 or 📧 careerdefine@gmail.com."
+- Otherwise, answer as a representative, and invite them to book an interview or contact us on WhatsApp if relevant.
+`;
 
   const suggestions = [
     "🎓 Our Courses",
@@ -57,11 +69,10 @@ const ChatAssistant = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = (text?: string) => {
+  const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim();
     if (!messageText) return;
 
-    // Add user message
     const userMessage: Message = {
       id: messages.length + 1,
       text: messageText,
@@ -73,32 +84,52 @@ const ChatAssistant = () => {
     setInputText('');
     setIsTyping(true);
 
-    // Generate AI response
-    setTimeout(() => {
-      let response = "Thank you for your question! Our team of experts can provide detailed information about all our programs. Here are some quick highlights:\n\n🚀 Industry-leading curriculum\n⭐ Expert mentorship\n💼 100% job placement support\n🏆 Proven track record\n\nWould you like to schedule a free consultation call to discuss your specific career goals?";
+    // Pricing deflection
+    const lowerText = messageText.toLowerCase();
+    const priceKeywords = ['price', 'fees', 'fee', 'cost', 'tuition', 'how much', 'pricing', 'charges', 'amount'];
+    if (priceKeywords.some(k => lowerText.includes(k))) {
+      const msg = "Please contact our team directly at 📞 +91 8618536940 or 📧 careerdefine@gmail.com.";
+      const aiMessage: Message = { id: userMessage.id + 1, text: msg, isUser: false, timestamp: new Date() };
+      setMessages(prev => [...prev, aiMessage]);
+      setIsTyping(false);
+      return;
+    }
 
-      // Check for keyword matches
-      const lowerText = messageText.toLowerCase();
-      if (lowerText.includes('course') || lowerText.includes('program') || lowerText.includes('training')) {
-        response = responses.courses;
-      } else if (lowerText.includes('mentor') || lowerText.includes('guidance')) {
-        response = responses.mentorship;
-      } else if (lowerText.includes('job') || lowerText.includes('placement') || lowerText.includes('career')) {
-        response = responses['job placement'];
-      } else if (lowerText.includes('ai') || lowerText.includes('tool') || lowerText.includes('technology')) {
-        response = responses['ai tools'];
-      }
+    // Try Gemini via backend; fallback to existing canned categories
+    try {
+      const tool = 'career-support';
+      const { data } = await aiService.chat({ message: messageText, tool, context: SYSTEM_CONTEXT });
+      const reply = data?.reply?.trim();
+      const safeReply = reply && reply.length > 0 ? reply : undefined;
+
+      const fallbackByKeyword = () => {
+        if (lowerText.includes('course') || lowerText.includes('program') || lowerText.includes('training')) return responses.courses;
+        if (lowerText.includes('mentor') || lowerText.includes('guidance')) return responses.mentorship;
+        if (lowerText.includes('job') || lowerText.includes('placement') || lowerText.includes('career')) return responses['job placement'];
+        if (lowerText.includes('ai') || lowerText.includes('tool') || lowerText.includes('technology')) return responses['ai tools'];
+        return "Thanks for reaching out! I can help with courses, mentorship, interview prep, and placement support. Would you like to book a free consultation or interview to get personalized guidance?";
+      };
 
       const aiMessage: Message = {
-        id: messages.length + 2,
-        text: response,
+        id: userMessage.id + 1,
+        text: safeReply || fallbackByKeyword(),
         isUser: false,
         timestamp: new Date()
       };
-
       setMessages(prev => [...prev, aiMessage]);
+    } catch (err: any) {
+      // Likely unauthenticated or AI not configured. Graceful fallback.
+      console.warn('AI fallback (chat):', err?.response?.status || err?.message);
+      const aiMessage: Message = {
+        id: userMessage.id + 1,
+        text: "I’m your Career Redefine assistant. Here’s how we help:\n\n• Courses, workshops, and technical upskilling\n• Interview prep, resume building, and career guidance\n• Mentorship and career counseling\n• Practice interviews, job readiness, placement support\n• Live + recorded sessions, community, and personalized guidance\n\nHow can I assist you today? Would you like to book a free consultation?",
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1000);
+    }
   };
 
   const handleSuggestionClick = (suggestion: string) => {

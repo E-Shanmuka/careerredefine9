@@ -23,7 +23,7 @@ const filterObj = (obj, ...allowedFields) => {
 export const getAllArticles = async (req, res) => {
   try {
     // Build query
-    const queryObj = { ...req.query, status: 'published' };
+    const queryObj = { ...req.query, isPublished: true };
     const excludedFields = ['page', 'sort', 'limit', 'fields'];
     excludedFields.forEach((el) => delete queryObj[el]);
 
@@ -146,6 +146,7 @@ export const createArticle = async (req, res) => {
       },
     });
   } catch (err) {
+    console.error('Error creating article:', err);
     res.status(400).json({
       status: 'fail',
       message: err.message,
@@ -181,8 +182,8 @@ export const updateArticle = async (req, res) => {
       'content',
       'summary',
       'tags',
-      'status',
-      'featuredImage',
+      'isPublished',
+      'image',
       'relatedCourses',
       'metaTitle',
       'metaDescription',
@@ -297,13 +298,14 @@ export const resizeArticleImage = async (req, res, next) => {
       stream.end(resizedImage);
     });
 
-    // Save the Cloudinary URL to the request object
-    req.body.featuredImage = result.secure_url;
+    // Save the Cloudinary URL to the request object under schema field 'image'
+    req.body.image = result.secure_url;
     next();
   } catch (err) {
+    console.error('Error processing article image:', err);
     res.status(400).json({
       status: 'error',
-      message: 'Error processing image',
+      message: 'Error processing image: ' + err.message,
     });
   }
 };

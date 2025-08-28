@@ -70,11 +70,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         const token = localStorage.getItem('token');
         if (!token) {
-          // No access token; do not call protected endpoints.
-          // We also won't force a refresh here to avoid 401 spam when no cookie exists.
-          setIsAuthenticated(false);
-          setUser(null);
-          return;
+          // Try silent refresh using HTTP-only cookie (if present)
+          try {
+            const newToken = await refreshToken();
+            if (!newToken) {
+              setIsAuthenticated(false);
+              setUser(null);
+              return;
+            }
+          } catch (e) {
+            setIsAuthenticated(false);
+            setUser(null);
+            return;
+          }
         }
 
         // Set auth header and fetch current user

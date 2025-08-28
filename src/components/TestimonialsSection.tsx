@@ -6,44 +6,37 @@ const TestimonialsSection = () => {
 
   const testimonials = [
     {
-      name: "Padmini Kadhirvel",
-      company: "TachoMind",
-      beforeRole: "Online Support Associate",
-      afterRole: "Automation Testing Engineer",
-      image: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=200",
-      testimonial: "Career Redefine completely transformed my career trajectory. The personalized mentorship and hands-on projects helped me transition from support to engineering.",
+      name: "Dhanush",
+      company: "Career Redefine",
+      beforeRole: "Aspiring Data Professional",
+      afterRole: "Data Science Innovator (1st Batch)",
+      image: "https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=200",
+      testimonial:
+        "Career Redefine's Data Science course transformed my career. Their dedication, invaluable guidance, ATS resume & job strategies, plus direct referral led me to a great opportunity. In my current company in just 5 months, I learned a year's worth! Grateful for their wisdom. In this challenging market, I hope you continue guiding & inspiring those who've lost hope, showing them the way forward, just as you did for me. Thank you again.",
       rating: 5,
-      salaryIncrease: "150%"
+      salaryIncrease: "—"
     },
     {
-      name: "Rajesh Kumar",
-      company: "Tech Innovations",
-      beforeRole: "Data Entry Clerk",
-      afterRole: "Full Stack Developer",
-      image: "https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=200",
-      testimonial: "The comprehensive curriculum and industry mentors helped me build a strong foundation in web development. Now I'm working on exciting projects!",
+      name: "Rakshith S R",
+      company: "Career Redefine",
+      beforeRole: "6-year Career Gap",
+      afterRole: "Full Stack Developer (Selected)",
+      image: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=200",
+      testimonial:
+        "After a 6-year gap, switching to IT felt impossible — until I joined Career Redefine. I recently got selected as a Full Stack Developer! The Python and Data Science foundation, practical approach, and Siddu Sir’s mentorship truly changed my journey. Grateful for the support and mindset this platform gave me!",
       rating: 5,
-      salaryIncrease: "200%"
+      salaryIncrease: "—"
     },
     {
-      name: "Priya Sharma",
-      company: "DataFlow Solutions",
-      beforeRole: "Marketing Assistant",
-      afterRole: "Data Scientist",
-      image: "https://images.pexels.com/photos/3785077/pexels-photo-3785077.jpeg?auto=compress&cs=tinysrgb&w=200",
-      testimonial: "The AI and Machine Learning course was exceptional. The real-world projects and career guidance helped me land my dream job in data science.",
-      rating: 5,
-      salaryIncrease: "180%"
-    },
-    {
-      name: "Arjun Patel",
-      company: "Cloud Systems Inc",
-      beforeRole: "IT Support",
-      afterRole: "DevOps Engineer",
+      name: "Manoj Kumar",
+      company: "Career Redefine",
+      beforeRole: "Non-technical Background",
+      afterRole: "Data Analyst (Top MNC) — 3rd Batch Data Science Innovator",
       image: "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=200",
-      testimonial: "The cloud computing and DevOps program was incredibly comprehensive. The hands-on labs and certification prep were invaluable for my career growth.",
+      testimonial:
+        "Coming from a non-technical background, I always thought a career in AI & Data Science was out of reach. But joining Career Redefine completely changed my perspective. The structured learning path, hands-on projects, and constant mentor support gave me the confidence to crack multiple interviews. Today, I am working as a Data Analyst in a top MNC, and it feels like a dream come true. I’m grateful to the team for showing me the right direction and helping me believe in myself.",
       rating: 5,
-      salaryIncrease: "160%"
+      salaryIncrease: "—"
     }
   ];
 

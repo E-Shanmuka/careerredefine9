@@ -26,6 +26,10 @@ const jobSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide a job category'],
     },
+    companyLogo: {
+      type: String,
+      trim: true,
+    },
     salary: {
       min: {
         type: Number,

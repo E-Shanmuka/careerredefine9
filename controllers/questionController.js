@@ -16,6 +16,24 @@ export const createQuestion = async (req, res) => {
       source: 'contact_form'
     });
 
+    // Send confirmation email to the user (best-effort)
+    try {
+      if (email) {
+        const userEmailer = new Email(
+          { email, name },
+          `${req.protocol}://${req.get('host')}/contact`
+        );
+        await userEmailer.send('queryConfirmation', 'We received your question', {
+          name,
+          subject: created.subject,
+          message: created.message,
+          supportEmail: process.env.EMAIL_FROM,
+        });
+      }
+    } catch (e) {
+      console.warn('Question user confirmation email failed:', e?.message);
+    }
+
     // Notify admin (best-effort)
     try {
       if (process.env.EMAIL_FROM) {

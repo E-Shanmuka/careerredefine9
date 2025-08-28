@@ -30,7 +30,6 @@ const AdminLayout: React.FC = () => {
         <Outlet />
       </main>
       <Footer />
-      <ChatAssistant />
     </div>
   );
 };

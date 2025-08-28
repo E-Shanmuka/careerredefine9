@@ -95,7 +95,7 @@ export const createBooking = async (req, res) => {
 // Get all bookings (admin only)
 export const getAllBookings = async (req, res) => {
   try {
-    const { status, startDate, endDate, user } = req.query;
+    const { status, startDate, endDate, user, page = 1, limit = 10 } = req.query;
     const query = {};
 
     if (status) query.status = status;
@@ -107,16 +107,27 @@ export const getAllBookings = async (req, res) => {
       if (endDate) query.date.$lte = new Date(endDate);
     }
 
-    const bookings = await Booking.find(query)
-      .populate('user', 'name email')
-      .sort('-createdAt');
+    const p = Math.max(parseInt(page, 10) || 1, 1);
+    const l = Math.max(parseInt(limit, 10) || 10, 1);
+    const skip = (p - 1) * l;
+
+    const [bookings, total] = await Promise.all([
+      Booking.find(query)
+        .populate('user', 'name email')
+        .sort('-createdAt')
+        .skip(skip)
+        .limit(l),
+      Booking.countDocuments(query)
+    ]);
 
     res.status(200).json({
       status: 'success',
       results: bookings.length,
+      pagination: { page: p, limit: l, total },
       data: { bookings }
     });
   } catch (err) {
+    console.error('getAllBookings error:', err);
     res.status(500).json({
       status: 'error',
       message: 'Error retrieving bookings'
@@ -153,6 +164,7 @@ export const getBooking = async (req, res) => {
       data: { booking }
     });
   } catch (err) {
+    console.error('getBooking error:', err);
     res.status(500).json({
       status: 'error',
       message: 'Error retrieving booking'
@@ -186,7 +198,7 @@ export const updateBookingStatus = async (req, res) => {
     );
     await statusUpdateEmail.send('bookingStatusUpdate', `Booking ${String(status).charAt(0).toUpperCase() + String(status).slice(1)}`, {
       name: booking.name || booking.user?.name,
-      date: booking.date.toDateString(),
+      date: booking.date ? booking.date.toDateString() : '',
       time: booking.timeSlot,
       status,
       meetingLink: meetingLink || booking.meetingLink,
@@ -198,6 +210,7 @@ export const updateBookingStatus = async (req, res) => {
       data: { booking }
     });
   } catch (err) {
+    console.error('updateBookingStatus error:', err);
     res.status(400).json({
       status: 'fail',
       message: 'Error updating booking status'
@@ -264,6 +277,7 @@ export const cancelBooking = async (req, res) => {
       data: { booking: populatedBooking }
     });
   } catch (err) {
+    console.error('cancelBooking error:', err);
     res.status(400).json({
       status: 'fail',
       message: 'Error cancelling booking'
@@ -360,6 +374,7 @@ export const getAvailableSlots = async (req, res) => {
 
     res.status(200).json({ status: 'success', data: { availableSlots } });
   } catch (err) {
+    console.error('getAvailableSlots error:', err);
     res.status(500).json({
       status: 'error',
       message: 'Error retrieving available slots'

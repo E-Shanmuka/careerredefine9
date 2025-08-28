@@ -101,12 +101,12 @@ const HeroSection = () => {
                 </span>
               </button>
               
-              <button className="group px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-800 font-semibold rounded-xl hover:bg-white transition-all duration-300 border border-gray-200 hover:border-gray-300 shadow-md hover:shadow-lg">
+              <a href="/support#booking" className="group px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-800 font-semibold rounded-xl hover:bg-white transition-all duration-300 border border-gray-200 hover:border-gray-300 shadow-md hover:shadow-lg">
                 <span className="flex items-center space-x-2">
                   <Play className="w-5 h-5" />
-                  <span>Watch Demo</span>
+                  <span>Book a Session</span>
                 </span>
-              </button>
+              </a>
             </div>
           </div>
 

@@ -36,7 +36,7 @@ const bookingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'cancelled', 'completed'],
+      enum: ['pending', 'confirmed', 'rejected', 'cancelled', 'completed'],
       default: 'pending',
     },
     meetingLink: {
@@ -81,21 +81,28 @@ bookingSchema.index({ user: 1, status: 1, date: 1 });
 
 // Virtual for formatted date
 bookingSchema.virtual('formattedDate').get(function () {
-  return this.date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  if (!this.date) return null;
+  try {
+    return this.date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  } catch (e) {
+    return null;
+  }
 });
 
 // Check if booking is upcoming
 bookingSchema.virtual('isUpcoming').get(function () {
+  if (!this.date) return false;
   return new Date(this.date) > new Date() && this.status === 'confirmed';
 });
 
 // Add a method to check if the booking can be cancelled
 bookingSchema.methods.canBeCancelled = function () {
+  if (!this.date) return false;
   const now = new Date();
   const bookingTime = new Date(this.date);
   const hoursUntilBooking = (bookingTime - now) / (1000 * 60 * 60);

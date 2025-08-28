@@ -1,4 +1,3 @@
-import HeroSection from './components/HeroSection';
 import CoursesSection from './components/CoursesSection';
 import PartnershipsSection from './components/PartnershipsSection';
 import TestimonialsSection from './components/TestimonialsSection';
@@ -7,6 +6,7 @@ import CorporateSection from './components/CorporateSection';
 import AboutSection from './components/AboutSection';
 import AwardsSection from './components/AwardsSection';
 import InsightsSection from './components/InsightsSection';
+import HeroSection from './components/HeroSection';
 
 const HomePage = () => {
   return (

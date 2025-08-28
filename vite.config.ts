@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => ({
         changeOrigin: true,
         secure: false,
         ws: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        // Do not rewrite the path; keep /api prefix so it reaches Express unchanged
       }
     },
     // Prevent direct access to .tsx files

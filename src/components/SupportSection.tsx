@@ -116,6 +116,20 @@ const SupportSection: React.FC = () => {
     setOpenFaq(openFaq === index ? null : index);
   };
 
+  // Auto-open booking if navigated with #booking
+  React.useEffect(() => {
+    const openIfHash = () => {
+      if (window.location.hash === '#booking') {
+        setShowBooking(true);
+        setTimeout(() => bookingRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
+      }
+    };
+    openIfHash();
+    const onHash = () => openIfHash();
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
   return (
     <div className="bg-gray-50 font-sans">
       {/* Hero Section */}

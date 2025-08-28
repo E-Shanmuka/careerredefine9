@@ -103,7 +103,8 @@ export const getJob = async (req, res) => {
 // Create a new job (Admin/Employer only)
 export const createJob = async (req, res) => {
   try {
-    req.body.employer = req.user.id;
+    // Align with Job model which uses 'postedBy'
+    req.body.postedBy = req.user.id;
     const newJob = await Job.create(req.body);
     res.status(201).json({
       status: 'success',
@@ -128,7 +129,7 @@ export const updateJob = async (req, res) => {
       });
     }
 
-    if (job.employer.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (job.postedBy.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         status: 'fail',
         message: 'Not authorized to update this job',
@@ -171,14 +172,15 @@ export const deleteJob = async (req, res) => {
       });
     }
 
-    if (job.employer.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (job.postedBy.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         status: 'fail',
         message: 'Not authorized to delete this job',
       });
     }
 
-    job.status = 'deleted';
+    // Use a valid enum value to soft close the job
+    job.status = 'closed';
     await job.save();
 
     res.status(204).json({
@@ -256,14 +258,14 @@ export const applyForJob = async (req, res) => {
       });
     }
 
-    if (job.applicants.some(a => a.user.toString() === req.user.id)) {
+    if (job.applications.some(a => a.user.toString() === req.user.id)) {
       return res.status(400).json({
         status: 'fail',
         message: 'You have already applied for this job',
       });
     }
 
-    job.applicants.push({
+    job.applications.push({
       user: req.user.id,
       resume: req.body.resume,
       coverLetter: req.body.coverLetter,
@@ -282,7 +284,7 @@ export const applyForJob = async (req, res) => {
     ]);
 
     // Notify employer
-    const employer = await User.findById(job.employer);
+    const employer = await User.findById(job.postedBy);
     if (employer) {
       const applicationUrl = `${req.protocol}://${req.get('host')}/employer/applications/${job._id}`;
       const email = new Email(
@@ -312,7 +314,7 @@ export const applyForJob = async (req, res) => {
 // Get jobs by employer
 export const getJobsByEmployer = async (req, res) => {
   try {
-    const jobs = await Job.find({ employer: req.params.employerId })
+    const jobs = await Job.find({ postedBy: req.params.employerId })
       .sort('-postedAt');
     res.status(200).json({
       status: 'success',

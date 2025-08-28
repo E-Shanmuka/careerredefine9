@@ -71,11 +71,10 @@ export const createQuery = async (req, res) => {
 // Get all queries (admin only)
 export const getAllQueries = async (req, res) => {
   try {
-    const { status, startDate, endDate, course } = req.query;
+    const { status, startDate, endDate, page = 1, limit = 10 } = req.query;
     const query = {};
 
     if (status) query.status = status;
-    if (course) query.course = course;
     
     if (startDate || endDate) {
       query.createdAt = {};
@@ -91,17 +90,27 @@ export const getAllQueries = async (req, res) => {
       ];
     }
 
-    const queries = await Query.find(query)
-      .populate('user', 'name email')
-      .populate('course', 'title')
-      .sort('-createdAt');
+    const p = Math.max(parseInt(page, 10) || 1, 1);
+    const l = Math.max(parseInt(limit, 10) || 10, 1);
+    const skip = (p - 1) * l;
+
+    const [queries, total] = await Promise.all([
+      Query.find(query)
+        .populate('user', 'name email')
+        .sort('-createdAt')
+        .skip(skip)
+        .limit(l),
+      Query.countDocuments(query)
+    ]);
 
     res.status(200).json({
       status: 'success',
       results: queries.length,
+      pagination: { page: p, limit: l, total },
       data: { queries }
     });
   } catch (err) {
+    console.error('getAllQueries error:', err);
     res.status(500).json({
       status: 'error',
       message: 'Error retrieving queries'
@@ -114,8 +123,7 @@ export const getQuery = async (req, res) => {
   try {
     const query = await Query.findById(req.params.id)
       .populate('user', 'name email')
-      .populate('course', 'title')
-      .populate('repliedBy', 'name email');
+      .populate('responses.admin', 'name email');
 
     if (!query) {
       return res.status(404).json({
@@ -148,6 +156,7 @@ export const getQuery = async (req, res) => {
       data: { query }
     });
   } catch (err) {
+    console.error('getQuery error:', err);
     res.status(500).json({
       status: 'error',
       message: 'Error retrieving query'
@@ -166,8 +175,7 @@ export const updateQueryStatus = async (req, res) => {
       { status },
       { new: true, runValidators: true }
     )
-    .populate('user', 'name email')
-    .populate('course', 'title');
+    .populate('user', 'name email');
 
     if (!query) {
       return res.status(404).json({
@@ -221,19 +229,20 @@ export const replyToQuery = async (req, res) => {
       req.params.id,
       {
         $push: {
-          replies: {
+          responses: {
             message: reply,
-            repliedBy: req.user.id
+            isAdmin: true,
+            admin: req.user.id
           }
         },
-        status: 'replied',
-        lastRepliedAt: Date.now()
+        status: 'in_progress',
+        lastResponseAt: Date.now(),
+        isRead: false
       },
       { new: true, runValidators: true }
     )
     .populate('user', 'name email')
-    .populate('course', 'title')
-    .populate('replies.repliedBy', 'name email');
+    .populate('responses.admin', 'name email');
 
     if (!query) {
       return res.status(404).json({
@@ -265,6 +274,7 @@ export const replyToQuery = async (req, res) => {
       data: { query }
     });
   } catch (err) {
+    console.error('replyToQuery error:', err);
     res.status(400).json({
       status: 'fail',
       message: 'Error replying to query'

@@ -160,6 +160,13 @@ export const createCourse = async (req, res) => {
 
     // Set the instructor to the current user
     req.body.instructor = req.user.id;
+    // Ensure an image has been uploaded and processed by middleware
+    if (!req.body.image) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Course image is required. Please attach an image file.',
+      });
+    }
     
     // Create the course
     const newCourse = await Course.create(req.body);
@@ -171,6 +178,8 @@ export const createCourse = async (req, res) => {
       },
     });
   } catch (err) {
+    // Helpful server-side log for diagnostics
+    console.error('Error creating course:', err);
     res.status(400).json({
       status: 'fail',
       message: err.message,
@@ -482,7 +491,7 @@ export const searchCourses = async (req, res) => {
 export const getPopularCourses = async (req, res) => {
   try {
     const courses = await Course.find({ isPublished: true })
-      .sort({ 'enrolledStudents': -1 })
+      .sort({ rating: -1, numReviews: -1, createdAt: -1 })
       .limit(5)
       .select('title image instructor price rating numReviews')
       .populate('instructor', 'name');

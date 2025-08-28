@@ -5,7 +5,6 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import morgan from 'morgan';
-import fetch from 'node-fetch';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -30,6 +29,8 @@ import * as bookingController from './controllers/bookingController.js';
 import * as authController from './controllers/authController.js';
 import * as aiController from './controllers/aiController.js';
 import * as questionController from './controllers/questionController.js';
+import Article from './models/Article.js';
+import * as resumeController from './controllers/resumeController.js';
 import {
   uploadUserPhoto,
   resizeUserPhoto,
@@ -58,6 +59,8 @@ import Review from './models/Review.js';
 // Import routes
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
+import bookingRoutes from './routes/bookingRoutes.js';
 
 // Function to ensure admin user exists
 const ensureAdminUser = async () => {
@@ -119,6 +122,26 @@ const ensureReviewIndexes = async () => {
     console.error('❌ Error ensuring review indexes:', err.message);
   }
 };
+
+// Ensure Article indexes: drop legacy slug_1 if present and sync model indexes
+const ensureArticleIndexes = async () => {
+  try {
+    const collection = mongoose.connection.collection('articles');
+    const indexes = await collection.indexes();
+    const slugIdx = indexes.find((idx) => idx.name === 'slug_1');
+    // If legacy unique index on slug exists (often created without sparse), keep it but ensure model indexes match
+    // If needed, drop and let Mongoose recreate based on schema
+    if (slugIdx && !slugIdx.sparse) {
+      await collection.dropIndex('slug_1');
+      console.log('🔧 Dropped legacy articles index slug_1');
+    }
+    await Article.syncIndexes();
+    console.log('✅ Article indexes synchronized');
+  } catch (err) {
+    console.error('❌ Error ensuring article indexes:', err.message);
+  }
+};
+
 // Removed router mounts; endpoints are inlined below
 
 // Import Vite for development
@@ -179,7 +202,7 @@ const sessionConfig = {
 // CORS configuration
 const corsOptions = {
   origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
   exposedHeaders: ['set-cookie']
@@ -370,6 +393,140 @@ app.delete('/api/v1/reviews/:id', protect, reviewController.deleteReview);
 // Admin-only list all
 app.get('/api/v1/reviews/admin/all', protect, restrictTo('admin'), reviewController.getAllReviews);
 
+// Test database connection and collections
+app.get('/api/v1/test/db', async (req, res) => {
+  try {
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    const collectionNames = collections.map(c => c.name);
+    
+    // Check if required collections exist
+    const requiredCollections = ['users', 'bookings', 'courses', 'jobs', 'articles', 'queries', 'questions', 'reviews'];
+    const missingCollections = requiredCollections.filter(c => !collectionNames.includes(c));
+    
+    // Test queries collection
+    let queriesTest = { success: false };
+    try {
+      const testQuery = await mongoose.connection.db.collection('queries').findOne({});
+      queriesTest = { 
+        success: true, 
+        count: await mongoose.connection.db.collection('queries').countDocuments() 
+      };
+    } catch (e) {
+      queriesTest = { success: false, error: e.message };
+    }
+    
+    // Test bookings collection
+    let bookingsTest = { success: false };
+    try {
+      const testBooking = await mongoose.connection.db.collection('bookings').findOne({});
+      bookingsTest = { 
+        success: true, 
+        count: await mongoose.connection.db.collection('bookings').countDocuments() 
+      };
+    } catch (e) {
+      bookingsTest = { success: false, error: e.message };
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      connected: mongoose.connection.readyState === 1,
+      collections: collectionNames,
+      missingCollections: missingCollections,
+      tests: {
+        queries: queriesTest,
+        bookings: bookingsTest
+      }
+    });
+  } catch (error) {
+    console.error('Database test error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// ----- Compatibility routes for legacy/static forms -----
+// This section handles form submissions from static HTML pages like datascience.html
+
+// Public: generic enquiry used by static HTML pages for queries (e.g., 'Request a Call Back')
+app.post('/api/enquiry', (req, res, next) => {
+  try {
+    const { name, email, phone, message, qualification, subject, page, form_type } = req.body || {};
+    // Build a sensible subject if missing
+    const derivedSubject = subject || `${page || 'General'} ${form_type === 'interview' ? 'Interview ' : ''}Enquiry`.trim();
+    // If no message provided, compose one including qualification
+    const composedMessage = message || `User enquiry submitted.${qualification ? ` Qualification: ${qualification}.` : ''}`;
+
+    // Normalize body to what queryController expects
+    req.body = {
+      name,
+      email,
+      phone,
+      subject: derivedSubject,
+      message: composedMessage,
+    };
+
+    return queryController.createQuery(req, res, next);
+  } catch (e) {
+    return res.status(400).json({ status: 'fail', message: e.message });
+  }
+});
+
+// Mirror path for the above enquiry form, without the /api prefix, for proxy compatibility.
+app.post('/enquiry', (req, res, next) => {
+  try {
+    const { name, email, phone, message, qualification, subject, page, form_type } = req.body || {};
+    const derivedSubject = subject || `${page || 'General'} ${form_type === 'interview' ? 'Interview ' : ''}Enquiry`.trim();
+    const composedMessage = message || `User enquiry submitted.${qualification ? ` Qualification: ${qualification}.` : ''}`;
+    req.body = { name, email, phone, subject: derivedSubject, message: composedMessage };
+    return queryController.createQuery(req, res, next);
+  } catch (e) {
+    return res.status(400).json({ status: 'fail', message: e.message });
+  }
+});
+
+// Public: interview booking used by static HTML pages for appointments (e.g., 'Book a Free Live Class')
+app.post('/api/book-interview', (req, res, next) => {
+  try {
+    const { name, email, phone, message, interview_date, interview_time, date, time, timeSlot } = req.body || {};
+
+    // Allow both interview_* fields and generic date/time inputs
+    const normalizedDate = interview_date || date;
+    const normalizedTime = interview_time || time || timeSlot;
+
+    // Normalize body to what bookingController expects
+    req.body = {
+      name,
+      email,
+      phone,
+      message,
+      date: normalizedDate,
+      timeSlot: normalizedTime,
+      type: 'consultation'
+    };
+
+    return bookingController.createBooking(req, res, next);
+  } catch (e) {
+    return res.status(400).json({ status: 'fail', message: e.message });
+  }
+});
+
+
+// Mirror path for the above interview booking form, without the /api prefix, for proxy compatibility.
+app.post('/book-interview', (req, res, next) => {
+  try {
+    const { name, email, phone, message, interview_date, interview_time, date, time, timeSlot } = req.body || {};
+    const normalizedDate = interview_date || date;
+    const normalizedTime = interview_time || time || timeSlot;
+    req.body = { name, email, phone, message, date: normalizedDate, timeSlot: normalizedTime, type: 'consultation' };
+    return bookingController.createBooking(req, res, next);
+  } catch (e) {
+    return res.status(400).json({ status: 'fail', message: e.message });
+  }
+});
+
 // ----- Queries -----
 // Public submit
 app.post('/api/v1/queries', queryController.createQuery);
@@ -377,10 +534,12 @@ app.post('/api/v1/queries', queryController.createQuery);
 app.get('/api/v1/queries/my-queries', protect, queryController.getMyQueries);
 app.get('/api/v1/queries/:id', protect, queryController.getQuery);
 // Admin
+app.get('/api/v1/queries', protect, restrictTo('admin'), queryController.getAllQueries); // Corrected route for admin
 app.get('/api/v1/queries/admin/all', protect, restrictTo('admin'), queryController.getAllQueries);
 app.get('/api/v1/queries/stats/query-stats', protect, restrictTo('admin'), queryController.getQueryStats);
 app.patch('/api/v1/queries/:id/status', protect, restrictTo('admin'), queryController.updateQueryStatus);
 app.post('/api/v1/queries/:id/reply', protect, restrictTo('admin'), queryController.replyToQuery);
+
 
 // ----- Questions -----
 // Public submit
@@ -389,7 +548,6 @@ app.post('/api/v1/questions', questionController.createQuestion);
 app.get('/api/v1/questions', protect, restrictTo('admin'), questionController.getAllQuestions);
 app.get('/api/v1/questions/:id', protect, restrictTo('admin'), questionController.getQuestion);
 app.delete('/api/v1/questions/:id', protect, restrictTo('admin'), questionController.deleteQuestion);
-
 // ----- Admin (Users + Dashboard) -----
 app.get('/api/v1/admin/dashboard/stats', protect, restrictTo('admin'), adminController.getDashboardStats);
 app.get('/api/v1/admin/users', protect, restrictTo('admin'), adminController.getAllUsers);
@@ -467,6 +625,14 @@ app.post('/api/v1/ai/image', protect, aiController.generateImage);
 app.post('/api/v1/ai/music', protect, aiController.generateMusic);
 app.post('/api/v1/ai/video', protect, aiController.generateVideo);
 
+// ----- Resume (Upload + Analysis) -----
+app.post(
+  '/api/v1/resume/analyze',
+  protect,
+  resumeController.uploadResume,
+  resumeController.analyzeResume
+);
+
 // In production, serve static files from the Vite build
 if (process.env.NODE_ENV === 'production') {
   // Serve static files from the Vite build
@@ -477,8 +643,11 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
   });
 } else {
-  // In development, redirect to Vite dev server
-  app.get('*', (req, res) => {
+  // In development, redirect non-API GET requests to Vite dev server
+  app.get('*', (req, res, next) => {
+    if (req.originalUrl.startsWith('/api')) {
+      return next(); // Skip API requests
+    }
     res.redirect('http://localhost:5173' + req.originalUrl);
   });
 }
@@ -524,6 +693,8 @@ const connectDB = async () => {
     await ensureAdminUser();
     // Ensure review indexes are correct for optional course reviews
     await ensureReviewIndexes();
+    // Ensure article indexes (handle legacy slug index)
+    await ensureArticleIndexes();
     
     dbConnection = conn;
     
@@ -575,7 +746,7 @@ const startServer = async () => {
     // Start the server
     const server = app.listen(PORT, () => {
       console.log(`✅ Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-      if (process.env.NODE_ENV !== 'production') {
+      if (process.env.NODE_ENV !== 'production' && process.env.EMBED_VITE === 'true') {
         console.log(`🔧 Vite dev server running at http://localhost:5173`);
       }
     });
@@ -604,7 +775,7 @@ const startServer = async () => {
 
 // Function to start the Vite dev server in development
 async function startViteDevServer() {
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production' && process.env.EMBED_VITE === 'true') {
     const vite = await createViteServer({
       server: { 
         middlewareMode: true,
@@ -652,16 +823,8 @@ async function startViteDevServer() {
   }
 }
 
-// Start the application
-if (process.env.NODE_ENV === 'production') {
-  startServer();
-} else {
-  // In development, start Vite dev server first, then the backend server
-  (async () => {
-    await startViteDevServer();
-    startServer();
-  })();
-}
+// Start the server
+startServer();
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
@@ -673,7 +836,7 @@ process.on('unhandledRejection', (err) => {
 });
 
 // Start Vite dev server in development
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' && process.env.EMBED_VITE === 'true') {
   startViteDevServer().catch(err => {
     console.error('Error starting Vite dev server:', err);
     process.exit(1);

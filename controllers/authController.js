@@ -180,7 +180,16 @@ export const verifyOTP = async (req, res, next) => {
     user.otpExpires = undefined;
     await user.save({ validateBeforeSave: false });
 
-    // 4) Send success response without token
+    // 4) Send welcome email (best-effort)
+    try {
+      const url = `${req.protocol}://${req.get('host')}`;
+      await new Email(user, url).sendWelcome();
+    } catch (e) {
+      // do not fail verification if email fails
+      console.warn('Welcome email failed:', e?.message);
+    }
+
+    // 5) Send success response without token
     return res.status(200).json({ success: true, message: 'OTP verified successfully' });
   } catch (err) {
     res.status(500).json({

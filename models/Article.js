@@ -8,6 +8,13 @@ const articleSchema = new mongoose.Schema(
       trim: true,
       maxlength: [200, 'Title cannot be more than 200 characters'],
     },
+    // SEO-friendly unique identifier
+    slug: {
+      type: String,
+      unique: true,
+      index: true,
+      sparse: true,
+    },
     content: {
       type: String,
       required: [true, 'Please provide content'],
@@ -52,6 +59,26 @@ articleSchema.index({ title: 'text', content: 'text', tags: 'text' });
 articleSchema.pre('save', function(next) {
   if (this.isModified('isPublished') && this.isPublished && !this.publishedAt) {
     this.publishedAt = Date.now();
+  }
+  next();
+});
+
+// Helper to create URL-friendly slugs
+function slugify(str) {
+  return String(str)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '') // remove invalid chars
+    .replace(/\s+/g, '-') // collapse whitespace and replace by -
+    .replace(/-+/g, '-'); // collapse dashes
+}
+
+// Ensure slug is set from title; add a short suffix to avoid duplicates
+articleSchema.pre('save', function(next) {
+  if (!this.slug || this.isModified('title')) {
+    const base = slugify(this.title || 'article');
+    const suffix = Math.random().toString(36).slice(2, 7);
+    this.slug = `${base}-${suffix}`;
   }
   next();
 });
